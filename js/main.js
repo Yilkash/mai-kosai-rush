@@ -111,7 +111,12 @@ function placeBubbles() {
   }
 }
 // Mama Yan Bui tells Lois the total once the awara is on the table
-cast.events.onMamaArrives = (mama) => say(mama, 'Lois, here’s the awara. Total is ₦1,500.');
+// The total changes with every delivery, between these, in whole ₦100s.
+const AWARA_TOTAL = { min: 3000, max: 7500 };
+cast.events.onMamaArrives = (mama) => {
+  const total = Math.round((AWARA_TOTAL.min + Math.random() * (AWARA_TOTAL.max - AWARA_TOTAL.min)) / 100) * 100;
+  say(mama, `Lois, here’s the awara. Total is ₦${total.toLocaleString('en-NG')}.`);
+};
 
 // ---- full screen, and sideways where the phone allows it
 const fsBtn = document.getElementById('fullscreen');

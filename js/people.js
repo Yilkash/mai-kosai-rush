@@ -16,7 +16,7 @@ function limb(len, rad, mat) {
 function torsoGeo({ female, chubby }) {
   const w = chubby ? 1.22 : 1;
   const pts = [
-    [.150, 0], [.158, .05], [female ? .128 : .140, .13], [chubby ? .2 : .148, .22],
+    [female ? .165 : .150, 0], [female ? .172 : .158, .05], [female ? .122 : .140, .13], [chubby ? .2 : female ? .135 : .148, .22],
     [female ? .158 : .168, .33], [.165, .41], [.13, .48], [.07, .52], [.001, .53],
   ].map(([r, y]) => new THREE.Vector2(r * (y > .1 && y < .3 ? w : Math.min(w, 1.08)), y));
   const g = new THREE.LatheGeometry(pts, 22);
@@ -29,10 +29,14 @@ export function makeHuman(o) {
     skin = '#7a4a2e', top = '#3f7fbf', bottom = '#2b3340', wrapperMap = null, hair = 'short',
     female = false, chubby = false, sleeves = 'short', h = 1, shoes = '#1d1a17',
     shorts = false,   // shorts: cloth on the thighs only, bare shins
+    skirt = null,     // a short skirt in this colour, bare legs
+    dress = null,     // a dress to the knee in this colour (top and skirt together)
+    earrings = false, handbag = null,
   } = o;
+  if (dress) { o.top = dress; }
   const skinM = M({ color: skin, roughness: .6 });
   const lipM = M({ color: new THREE.Color(skin).multiplyScalar(.62), roughness: .5 });
-  const topM = M({ color: top });
+  const topM = M({ color: dress || top });
   const botM = wrapperMap ? M({ map: wrapperMap }) : M({ color: bottom });
 
   const g = new THREE.Group();
@@ -47,6 +51,18 @@ export function makeHuman(o) {
     wr = mesh(new THREE.CylinderGeometry(.16, .2, .66, 20, 1, true), botM, { y: -.28 });
     wr.scale.z = .78; hips.add(wr);
     hips.add(mesh(new THREE.TorusGeometry(.155, .015, 6, 20), botM, { y: .06, rx: Math.PI / 2 }));
+  }
+
+  const bareLegs = !!(skirt || dress);
+  if (bareLegs) {
+    const len = dress ? .5 : .3;
+    const sk = mesh(new THREE.CylinderGeometry(.165, .23, len, 20, 1, true), M({ color: dress || skirt, side: THREE.DoubleSide }), { y: -len / 2 + .04 });
+    sk.scale.z = .78; hips.add(sk);
+  }
+  if (handbag) {
+    const bag = new THREE.Group(); bag.position.set(.19, .02, .02); hips.add(bag);
+    bag.add(mesh(box(.05, .16, .2), M({ color: handbag, roughness: .4 })));
+    bag.add(mesh(new THREE.TorusGeometry(.2, .006, 4, 16, Math.PI * .9), M({ color: handbag }), { x: -.06, y: .2, rz: 1.75 }));
   }
 
   // neck and head
@@ -66,6 +82,7 @@ export function makeHuman(o) {
   const nostrils = mesh(new THREE.SphereGeometry(.022, 12, 10), skinM, { y: -.03, z: .094 }); nostrils.scale.set(1.35, .7, .8); head.add(nostrils);
   [[-.052, .028], [-.064, .024]].forEach(([y, r], i) => { const l = mesh(new THREE.SphereGeometry(r, 12, 8), lipM, { y, z: .087 - i * .003, cast: false }); l.scale.set(1.35, .42, .62); head.add(l); });
   addHair(head, hair);
+  if (earrings) [-1, 1].forEach((sx) => head.add(mesh(new THREE.TorusGeometry(.016, .003, 4, 12), M({ color: '#e6b84a', metalness: .8, roughness: .3 }), { x: sx * .1, y: -.035, ry: Math.PI / 2, cast: false })));
 
   // arms: short sleeves over the upper arm, bare forearms, simple hands
   const shoulderX = (chubby ? .2 : .165) + .03;
@@ -84,9 +101,9 @@ export function makeHuman(o) {
   // legs
   const legs = [-1, 1].map((s) => {
     const hp = new THREE.Group(); hp.position.set(s * .085, 0, 0); hips.add(hp);
-    const th = limb(.43, chubby ? .085 : .068, wrapperMap ? skinM : botM); hp.add(th);
+    const th = limb(.43, chubby ? .085 : .068, wrapperMap || bareLegs ? skinM : botM); hp.add(th);
     const kn = new THREE.Group(); kn.position.y = -.43; th.add(kn);
-    const shin = limb(.42, .05, wrapperMap || shorts ? skinM : botM); kn.add(shin);
+    const shin = limb(.42, .05, wrapperMap || shorts || bareLegs ? skinM : botM); kn.add(shin);
     if (shorts) th.add(mesh(new THREE.CylinderGeometry(chubby ? .095 : .078, .072, .3, 12), botM, { y: -.15 }));
     shin.add(mesh(box(.095, .06, .23), M({ color: shoes, roughness: .5 }), { y: -.44, z: .05 }));
     return { hp, th, kn, shin };
@@ -116,6 +133,22 @@ function addHair(head, kind) {
       t.rotation.set(-.15, Math.PI / 2, 0); t.position.set(i * .024, .018, -.005); t.castShadow = true; head.add(t);
     }
     head.add(mesh(new THREE.SphereGeometry(.045, 12, 10), dark, { y: -.03, z: -.11 }));
+  }
+  if (kind === 'braids') {    // long box braids down the back
+    const bM = M({ color: '#1b1411', roughness: .9 }); cap(.109, bM);
+    for (let i = 0; i < 30; i++) {
+      const a = (-120 + i * (240 / 29)) * Math.PI / 180 + Math.PI;
+      head.add(mesh(new THREE.CapsuleGeometry(.012, .34, 3, 5), bM, { x: Math.sin(a) * .1, y: -.13, z: Math.cos(a) * .1 - .02, rx: Math.cos(a) * .12, rz: -Math.sin(a) * .1 }));
+    }
+  }
+  if (kind === 'weave') {     // a long weave to the shoulders
+    const wM = M({ color: '#241812', roughness: .6 }); cap(.112, wM);
+    const back = mesh(new THREE.CylinderGeometry(.118, .14, .26, 20, 1, true, Math.PI * .28, Math.PI * 1.44), wM, { y: -.1 });
+    back.material.side = THREE.DoubleSide; head.add(back);
+  }
+  if (kind === 'puff') {      // afro puff
+    const pM = M({ color: '#17110e', roughness: 1 }); cap(.106, pM);
+    head.add(mesh(new THREE.SphereGeometry(.09, 14, 12), pM, { y: .12, z: -.05 }));
   }
   if (kind === 'headtie') {   // gele
     const tie = M({ color: '#c2362f', roughness: .7 });

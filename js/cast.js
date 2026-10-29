@@ -47,14 +47,18 @@ export function buildCast(scene) {
   // no line, all facing her
   const JEANS = '#2f4f7a', BLACK = '#22252b', KHAKI = '#8a7a5a';
   const crowd = [
+    // the guys
     [{ skin: '#6a4330', top: '#2f7d4f', bottom: JEANS, hair: 'short' }, .1, 4.7, 'phone'],
-    [{ skin: '#5b3a28', top: '#f0ece2', bottom: BLACK, hair: 'short', sleeves: 'long' }, 1.1, 5.25],
-    [{ skin: '#7b4d31', top: '#c2362f', bottom: KHAKI, hair: 'short', shorts: true, shoes: '#2b2b2b' }, 2.15, 4.75],
-    [{ skin: '#8a5636', top: '#f2b84b', bottom: JEANS, hair: 'bun', female: true }, .3, 5.75, 'phone'],
-    [{ skin: '#6b4429', top: '#1d1d1f', bottom: '#4b5a3a', hair: 'short', shorts: true }, 1.75, 6.05],
-    [{ skin: '#9a6440', top: '#e9a6c2', bottom: BLACK, hair: 'allback', female: true, h: .95 }, 2.6, 5.7],
-    [{ skin: '#5d3a26', top: '#3f7fbf', bottom: JEANS, hair: 'short', h: .98 }, -.75, 5.3],
-    [{ skin: '#704a33', top: '#ffffff', bottom: '#6d3b5a', hair: 'bun', female: true, shorts: true, h: .95 }, .95, 6.55, 'phone'],
+    [{ skin: '#5b3a28', top: '#f0ece2', bottom: BLACK, hair: 'short', sleeves: 'long' }, 1.1, 5.3],
+    [{ skin: '#7b4d31', top: '#c2362f', bottom: KHAKI, hair: 'short', shorts: true, shoes: '#2b2b2b' }, 2.2, 4.8],
+    [{ skin: '#6b4429', top: '#1d1d1f', bottom: '#4b5a3a', hair: 'short', shorts: true }, 1.7, 6.15],
+    [{ skin: '#5d3a26', top: '#3f7fbf', bottom: JEANS, hair: 'short', h: .98 }, -.8, 5.35],
+    // the ladies
+    [{ skin: '#8a5636', top: '#e94e8a', bottom: JEANS, hair: 'braids', female: true, earrings: true, h: .96 }, .45, 5.75, 'phone'],
+    [{ skin: '#9a6440', dress: '#1d1a1f', hair: 'weave', female: true, earrings: true, handbag: '#c9862e', shoes: '#c62f2a', h: .97 }, 2.65, 5.65],
+    [{ skin: '#7b4d31', top: '#f2b84b', bottom: '#4a6fa5', hair: 'puff', female: true, shorts: true, earrings: true, h: .94 }, .95, 6.6],
+    [{ skin: '#a06a46', top: '#ffffff', skirt: '#b23b5a', hair: 'braids', female: true, earrings: true, handbag: '#1d1a17', h: .95 }, -.25, 6.3, 'phone'],
+    [{ skin: '#6f4630', top: '#2f9a6a', bottom: BLACK, hair: 'weave', female: true, earrings: true, h: .96 }, 2.2, 6.75],
   ];
   crowd.forEach(([o, x, z, extra]) => {
     const p = add(o, { x, z, face: [L.x + rnd(-.2, .2), L.z], role: 'wait' });
