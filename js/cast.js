@@ -54,7 +54,11 @@ export function buildCast(scene) {
 
   const events = {};
   let flashEvery = 4.5;     // seconds between Oluwasegun's photos; shorter during a WhatsApp rush
-  let loisHand = 0;         // > 0 while Lois is handing an order over
+  // What Lois is doing: bending to the kunu flask under the table, reaching
+  // into the basket, handing over, or resting with a hand on her hip.
+  let loisAct = null, loisActT = 0, loisIdle = 0;
+  const LOIS_ACTS = { kunu: 1.3, kosai: .45, awara: .5, hand: .8 };
+  let mamaMode = 'deliver';
 
   function update(t, dt) {
     for (const p of [racheal, lois, seg, vee, baba, mama]) {
@@ -66,13 +70,47 @@ export function buildCast(scene) {
     ra.up.rotation.set(-1.15 + Math.sin(t * 3) * .12, 0, -.25 + Math.cos(t * 3) * .12);
     ra.el.rotation.x = -.5;
     racheal.userData.head.rotation.set(.25, 0, 0);
-    // Lois packs, and reaches out when she hands an order over
-    const la = lois.userData.arms, s = Math.sin(t * 1.6);
-    loisHand = Math.max(0, loisHand - dt);
-    if (loisHand > 0) { la[1].up.rotation.x = -1.5; la[1].el.rotation.x = -.2; }
-    else { la[1].up.rotation.x = -.7 - s * .3; la[1].el.rotation.x = -.8; }
-    la[0].up.rotation.x = -.9 + s * .25; la[0].el.rotation.x = -.6;
-    lois.userData.head.rotation.y = Math.sin(t * .8) * .35;
+    // Lois
+    const lu = lois.userData, la = lu.arms;
+    const still = () => {
+      lu.hips.position.y = .9; lu.hips.rotation.set(0, 0, 0);
+      lu.legs.forEach((l) => { l.hp.rotation.x = 0; l.kn.rotation.x = 0; });
+      la.forEach((a) => { a.up.rotation.set(0, 0, 0); a.el.rotation.x = 0; });
+    };
+    still();
+    if (loisAct) {
+      loisActT += dt; loisIdle = 0;
+      const d = LOIS_ACTS[loisAct], k = Math.sin(Math.min(1, loisActT / d) * Math.PI);   // 0 → 1 → 0
+      if (loisAct === 'kunu') {
+        // bend down to the red flask under the table, then straighten up
+        lu.hips.rotation.x = .85 * k; lu.hips.position.y = .9 - .22 * k;
+        lu.legs.forEach((l) => { l.hp.rotation.x = -.85 * k - .5 * k; l.kn.rotation.x = 1.0 * k; });
+        la.forEach((a) => { a.up.rotation.x = -.5 * k; a.el.rotation.x = -.3 * k; });
+        lu.head.rotation.x = .2 * k;
+      } else if (loisAct === 'hand') {
+        la[1].up.rotation.x = -1.5 * k; la[1].el.rotation.x = -.2;
+      } else {
+        // a quick reach into the basket (kosai) or the awara on her right
+        lu.hips.rotation.y = (loisAct === 'awara' ? -.35 : .25) * k;
+        la[loisAct === 'awara' ? 0 : 1].up.rotation.x = -1.1 * k; la[loisAct === 'awara' ? 0 : 1].el.rotation.x = -.5 * k;
+        lu.hips.rotation.x = .2 * k;
+      }
+      if (loisActT >= d) loisAct = null;
+    } else {
+      loisIdle += dt;
+      if (loisIdle > 3) {
+        // resting: weight on one leg, hand on her hip
+        const r = Math.min(1, (loisIdle - 3) / .6);
+        lu.hips.rotation.z = .05 * r;
+        la[0].up.rotation.set(-.15 * r, 0, .75 * r); la[0].el.rotation.x = -1.7 * r;
+        lu.head.rotation.y = Math.sin(t * .5) * .3;
+      } else {
+        const s = Math.sin(t * 1.6);
+        la[0].up.rotation.x = -.6 + s * .15; la[0].el.rotation.x = -.8;
+        la[1].up.rotation.x = -.5 - s * .15; la[1].el.rotation.x = -.8;
+        lu.head.rotation.y = Math.sin(t * .8) * .35;
+      }
+    }
     // Oluwasegun's flash for the WhatsApp group
     flash.intensity = (t % flashEvery) < .12 ? 6 : 0;
     // V chatting with Lois
@@ -80,34 +118,36 @@ export function buildCast(scene) {
     vee.userData.arms[0].up.rotation.x = -.4 + Math.sin(t * 2.2) * .15;
     baba.userData.head.rotation.y = Math.sin(t * .4) * .3;
 
-    // Mama Yan Bui: walks in, puts the awara down, talks, goes home
+    // Mama Yan Bui: at opening she puts the awara down and goes; at closing she comes back for her money
     const mu = mama.userData;
     if (mamaStage === 'walking') {
-      if (walkStep(mama, MAMA_STOP, dt, t, .95)) { mamaStage = 'placing'; mamaWait = 0; faceTowards(mama, L.x, L.z); }
+      if (walkStep(mama, MAMA_STOP, dt, t, .95)) { mamaStage = mamaMode === 'deliver' ? 'placing' : 'collecting'; mamaWait = 0; faceTowards(mama, L.x, L.z); if (mamaMode === 'collect') events.onMamaCollects?.(mama); }
     } else if (mamaStage === 'placing') {
       mamaWait += dt;
       mu.arms[1].up.rotation.x = -.5 - Math.min(1, mamaWait) * .6;
       if (mamaWait > 1) {
         scene.attach(awara); awara.position.copy(AWARA_ON_TABLE); awara.rotation.set(0, .3, 0);
-        mamaStage = 'talking'; mamaWait = 0;
-        events.onMamaArrives?.(mama);
+        mamaStage = 'leaving';
+        events.onMamaDelivers?.(mama);
       }
-    } else if (mamaStage === 'talking') {
-      mu.arms[1].up.rotation.x = -.2 + Math.sin(t * 3) * .1;
+    } else if (mamaStage === 'collecting') {
+      mu.arms[1].up.rotation.x = -1.1; mu.arms[1].el.rotation.x = -.3;          // hand out for the money
     } else if (mamaStage === 'leaving') {
       if (walkStep(mama, MAMA_HOME, dt, t, 1.0)) { mamaStage = 'away'; mama.visible = false; }
     }
   }
 
   return {
-    update, events, vee, seg, lois, mama, racheal,
-    /** Mama Yan Bui comes with the awara. */
-    mamaComes() {
-      mama.visible = true; mama.position.copy(MAMA_FROM); mamaStage = 'walking';
-      mama.userData.arms[1].hand.attach(awara); awara.position.set(0, -.08, 0); awara.rotation.set(0, 0, 0);
+    update, events, vee, seg, lois, mama, racheal, get mamaHere() { return mamaStage === 'collecting'; },
+    /** Mama Yan Bui comes: 'deliver' at opening, 'collect' at closing. */
+    mamaComes(mode = 'deliver') {
+      mamaMode = mode; mama.visible = true; mama.position.copy(MAMA_FROM); mamaStage = 'walking';
+      if (mode === 'deliver') { mama.userData.arms[1].hand.attach(awara); awara.position.set(0, -.08, 0); awara.rotation.set(0, 0, 0); }
     },
     mamaLeaves() { mamaStage = 'leaving'; },
-    handOver() { loisHand = .8; },
+    /** Lois does something: 'kunu', 'kosai', 'awara' or 'hand'. */
+    loisDoes(kind) { loisAct = kind; loisActT = 0; },
+    handOver() { loisAct = 'hand'; loisActT = 0; },
     setRush(on) { flashEvery = on ? 1.2 : 4.5; },
   };
 }

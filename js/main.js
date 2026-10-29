@@ -73,19 +73,25 @@ setTime(330);
 const bubbles = document.getElementById('bubbles');
 const talking = [];
 const above = new THREE.Vector3();
-function say(person, text, seconds = 4) {
-  // one bubble per person: a new line replaces the old
-  for (let i = talking.length - 1; i >= 0; i--) if (talking[i].person === person) { talking[i].el.remove(); talking.splice(i, 1); }
+function say(person, text, seconds = 2.5, kind = '') {
+  // one bubble per person, and at most two talking at once: the oldest makes way
+  for (let i = talking.length - 1; i >= 0; i--) if (talking[i].person === person && talking[i].kind === kind) { talking[i].el.remove(); talking.splice(i, 1); }
+  if (!kind) {
+    const lines = talking.filter((b) => !b.kind);
+    if (lines.length >= 2) { const old = lines[0]; old.el.remove(); talking.splice(talking.indexOf(old), 1); }
+  }
   const el = document.createElement('div');
-  el.className = 'say'; el.setAttribute('role', 'status'); el.textContent = text;
+  el.className = kind ? `say ${kind}` : 'say';
+  if (!kind) el.setAttribute('role', 'status');
+  el.textContent = text;
   bubbles.appendChild(el);
-  talking.push({ person, el, until: clock.elapsedTime + seconds });
+  talking.push({ person, el, kind, born: clock.elapsedTime, until: clock.elapsedTime + seconds });
 }
 function placeBubbles() {
   for (let i = talking.length - 1; i >= 0; i--) {
     const b = talking[i];
     if (clock.elapsedTime > b.until || !b.person.parent) { b.el.remove(); talking.splice(i, 1); continue; }
-    b.person.getWorldPosition(above); above.y += 1.95 * (b.person.userData.h || 1);
+    b.person.getWorldPosition(above); above.y += 1.95 * (b.person.userData.h || 1) + (b.kind === 'coin' ? (clock.elapsedTime - b.born) * .5 : 0);
     above.project(camera);
     b.el.style.left = `${Math.min(innerWidth - 90, Math.max(90, (above.x * .5 + .5) * innerWidth))}px`;
     b.el.style.top = `${Math.max(60, (-above.y * .5 + .5) * innerHeight)}px`;

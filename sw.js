@@ -1,6 +1,6 @@
 // Keeps the game playable offline after the first visit.
 // Scoped to /mai-kosai-rush/ only: the other apps on yilkash.github.io are not touched.
-const CACHE = 'mai-kosai-rush-v4';
+const CACHE = 'mai-kosai-rush-v5';
 const FILES = [
   './', './index.html', './css/style.css', './manifest.webmanifest',
   './js/main.js', './js/textures.js', './js/sky.js', './js/util.js', './js/world.js',

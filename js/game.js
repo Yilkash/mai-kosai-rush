@@ -33,7 +33,7 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
       spawnIn: 6, rush: 0, rushCooldown: 0, vCooldown: 0,
       argueIn: 50, nepa: 0, nepaDone: 0,
       sandal: { buyer: null, askAt: 380 + Math.random() * 130, sold: 0, asked: false },
-      mamaCalled: false,
+      mamaTotal: 0,
       stats: { served: 0, walkedOff: 0, fakeCaught: 0, fakeMissed: 0, burnt: 0, wrongChange: 0 },
     });
     customers.clear();
@@ -100,11 +100,12 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
     const k = b.dataset.add;
     if (!G.selected) { packingEl.textContent = 'Tap an order card first'; return; }
     if (G.stock[k] <= 0) {
-      if (k === 'kosai') say(cast.racheal, 'Basket is empty! Lift the kosai from the pan.', 3);
+      if (k === 'kosai') packingEl.textContent = 'Basket is empty: lift the kosai from the pan';
       else packingEl.textContent = `No ${k} left`;
       return;
     }
     G.stock[k]--; G.bag[k]++;
+    cast.loisDoes(k);
     renderBag(); renderStock();
   }));
   $('pepper').addEventListener('click', () => { if (!G.selected) return; G.bag.pepper = !G.bag.pepper; renderBag(); });
@@ -117,7 +118,7 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
     for (const k of ['kosai', 'awara', 'kunu']) if (b[k] !== o[k]) wrong.push(`${o[k]} ${k}`);
     if (b.pepper !== o.pepper) wrong.push(o.pepper ? 'pepper' : 'no pepper');
     if (wrong.length) {
-      say(c.person, `Ah Lois! I said ${wrong.join(', ')}!`, 3);
+      say(c.person, `I said ${wrong[0]}!`, 2.5);
       c.patience = Math.max(0, c.patience - .15);
       return;
     }
@@ -145,10 +146,10 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
     if (G.phase !== 'open') return;
     if (!G.pan.frying) { G.pan.frying = true; G.pan.t = 0; renderPan(); return; }
     const p = panProgress();
-    if (p < .7) { say(cast.racheal, 'Wait, it’s still raw!', 2.5); return; }
+    if (p < .7) { say(cast.racheal, 'Not done!', 1.5); return; }
     G.pan.frying = false;
     if (p < 1.25) { G.stock.kosai += BATCH; }
-    else { G.stats.burnt++; say(cast.racheal, 'Ah! It don burn. Throw it away.', 3); }
+    else { G.stats.burnt++; say(cast.racheal, 'E don burn!', 2); }
     renderPan(); renderStock();
   });
 
@@ -170,8 +171,26 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
   }
   function close() { modal.hidden = true; G.paused = false; }
 
+  // In-game choices sit in a bar where the packing tray is, so the stall stays in view.
+  const decide = $('decide'), tray = document.querySelector('.tray');
+  function ask(html, buttons) {
+    decide.innerHTML = `<div class="dtext">${html}</div>`;
+    const row = document.createElement('div'); row.className = 'dchoices';
+    buttons.forEach(([label, fn, cls, disabled]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      if (cls) b.className = cls;
+      b.disabled = !!disabled;
+      b.addEventListener('click', () => { decide.hidden = true; tray.hidden = false; G.paused = false; fn(); });
+      row.appendChild(b);
+    });
+    decide.appendChild(row);
+    decide.hidden = false; tray.hidden = true; G.paused = true;
+  }
+  const deciding = () => !decide.hidden;
+
   function served(c, price, mood = 'happy') {
     G.sales += price;
+    if (price > 0) say(cast.lois, `+${naira(price)}`, 1.6, 'coin');
     G.stats.served++;
     cast.handOver();
     customers.leave(c, mood);
@@ -187,16 +206,16 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
       const note = [500, 1000, 2000, 5000].find((n) => n >= price + (Math.random() < .3 ? 400 : 0)) || 5000;
       const change = note - price;
       if (change === 0) {
-        open(`<h2>${c.name} pays cash</h2><p class="big">${naira(note)}</p><p>Exact money for ${describe(o)}.</p>`,
-          [['Collect it', () => { say(c.person, 'Thank you, Lois!', 2.5); served(c, price); }, 'primary']]);
+        ask(`<b>${c.name}</b> pays <b>${naira(note)}</b> cash. Exact money.`,
+          [['Collect it', () => served(c, price), 'primary']]);
         return;
       }
       const options = shuffle([change, change + pick([50, 100]), Math.max(50, change - pick([50, 100]))]);
-      open(`<h2>${c.name} pays cash</h2><p class="big">${naira(note)}</p><p>The order comes to <b>${naira(price)}</b>. How much change?</p>`,
+      ask(`<b>${c.name}</b> pays <b>${naira(note)}</b> for <b>${naira(price)}</b>. Change?`,
         options.map((v) => [naira(v), () => {
-          if (v === change) { say(c.person, 'Correct. Thank you o!', 2.5); served(c, price); }
-          else if (v > change) { G.stats.wrongChange++; say(c.person, 'Hehe, thank you!', 2.5); served(c, price - (v - change)); }
-          else { G.stats.wrongChange++; say(c.person, 'Ah Lois, my change no complete o!', 3); served(c, price, 'angry'); }
+          if (v === change) served(c, price);
+          else if (v > change) { G.stats.wrongChange++; served(c, price - (v - change)); }
+          else { G.stats.wrongChange++; say(c.person, 'My change no complete!', 2.5); served(c, price, 'angry'); }
         }]));
     } else {
       // transfer: watch for the fake alert
@@ -205,22 +224,18 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
       const cut = [100, 150, 200].filter((d) => d < price);
       const shownAmount = trick === 'amount' ? (cut.length ? price - pick(cut) : price / 2) : price;
       const status = trick === 'pending' ? '<span class="bad">Pending</span>' : '<span class="good">Successful</span>';
+
       const from = trick === 'sender' ? 'Unknown Sender' : c.name.toUpperCase() + ' ' + pick(['A.', 'O.', 'I.', 'M.']);
-      open(`<h2>${c.name} says “I don transfer!”</h2>
-        <div class="alert"><b>Credit alert</b>
-          <div><span>Amount</span><strong>${naira(shownAmount)}</strong></div>
-          <div><span>From</span><strong>${from}</strong></div>
-          <div><span>To</span><strong>LOIS NANJI MIRI</strong></div>
-          <div><span>Status</span><strong>${status}</strong></div></div>
-        <p>The order is <b>${naira(price)}</b>. Is the money really in?</p>`,
+      ask(`<b>${c.name}</b> transferred for <b>${naira(price)}</b>.
+        <span class="alert">Alert: <b>${naira(shownAmount)}</b> · ${from} · ${status}</span>`,
         shuffle([
           ['Money don land', () => {
-            if (fake) { G.stats.fakeMissed++; say(c.person, 'Bye bye!', 2); served(c, 0, 'happy'); setTimeout(() => say(cast.lois, 'Wait… that alert was fake!', 3.5), 2500); }
-            else { say(c.person, 'Thank you!', 2.5); served(c, price); }
+            if (fake) { G.stats.fakeMissed++; served(c, 0, 'happy'); setTimeout(() => say(cast.lois, 'Fake alert!', 2.5), 2500); }
+            else served(c, price);
           }],
-          ['Abeg, check am again', () => {
-            if (fake) { G.stats.fakeCaught++; say(c.person, 'Ehen… let me pay cash.', 3); served(c, price); }
-            else { say(c.person, 'Lois, the money is there now!', 3); c.patience = Math.max(.05, c.patience - .1); served(c, price); }
+          ['Check am again', () => {
+            if (fake) { G.stats.fakeCaught++; say(c.person, 'Ehen… cash then.', 2.5); served(c, price); }
+            else { c.patience = Math.max(.05, c.patience - .1); served(c, price); }
           }],
         ]));
     }
@@ -233,14 +248,13 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
     const first = w[Math.floor(Math.random() * (w.length - 1))];
     const later = w.filter((c) => c.arrivedAt > first.arrivedAt);
     const second = pick(later);
-    say(second.person, 'I came before you!', 4);
-    say(first.person, 'Ehn? I was here since!', 4);
-    open(`<h2>Wahala!</h2><p><b>${first.name}</b> and <b>${second.name}</b> are arguing about who came first.</p>`, shuffle([
-      [`Serve ${first.name} first`, () => { [first, second].forEach((c) => { c.patience = Math.min(1, c.patience + .2); }); select(first); say(second.person, 'Okay, okay.', 2.5); }],
-      [`Serve ${second.name} first`, () => { say(first.person, 'You people no fair! I’m going.', 3); customers.leave(first, 'angry'); G.stats.walkedOff++; if (G.selected === first) G.selected = null; select(second); }],
+    say(second.person, 'I came first!', 3);
+    ask(`<b>Wahala!</b> ${first.name} and ${second.name} are arguing about who came first.`, shuffle([
+      [`Serve ${first.name} first`, () => { [first, second].forEach((c) => { c.patience = Math.min(1, c.patience + .2); }); select(first); }],
+      [`Serve ${second.name} first`, () => { say(first.person, 'No fair! I’m going.', 2.5); customers.leave(first, 'angry'); G.stats.walkedOff++; if (G.selected === first) G.selected = null; select(second); }],
     ]).concat([
-      ['Free kosai for both (2)', () => { G.stock.kosai -= 2; [first, second].forEach((c) => { c.patience = Math.min(1, c.patience + .3); }); say(first.person, 'Hehe, thank you!', 2.5); renderStock(); }, '', G.stock.kosai < 2],
-      [G.vCooldown > 0 ? `V is tired (${Math.ceil(G.vCooldown)}s)` : 'Ask V to calm them', () => { G.vCooldown = 60; [first, second].forEach((c) => { c.patience = Math.min(1, c.patience + .25); }); say(cast.vee, 'Una calm down, Lois go serve everybody!', 3.5); }, '', G.vCooldown > 0],
+      ['Free kosai for both (2)', () => { G.stock.kosai -= 2; [first, second].forEach((c) => { c.patience = Math.min(1, c.patience + .3); }); renderStock(); }, '', G.stock.kosai < 2],
+      [G.vCooldown > 0 ? `V is tired (${Math.ceil(G.vCooldown)}s)` : 'Ask V to calm them', () => { G.vCooldown = 60; [first, second].forEach((c) => { c.patience = Math.min(1, c.patience + .25); }); say(cast.vee, 'Una calm down!', 2.5); }, '', G.vCooldown > 0],
     ]));
     return true;
   }
@@ -248,7 +262,7 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
   $('segun').addEventListener('click', () => {
     if (G.phase !== 'open' || G.rushCooldown > 0) return;
     G.rush = 40; G.rushCooldown = 100; cast.setRush(true);
-    say(cast.seg, 'Posted on the group: “Hot kosai dey Mai Kosai!”', 4);
+    say(cast.seg, 'Posted on the group!', 2.5);
     renderHud();
   });
 
@@ -256,22 +270,22 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
   function tapV() {
     if (G.phase !== 'open') return;
     const buyer = G.sandal.buyer;
-    if (G.sandal.sold) { say(cast.vee, 'Thank you for selling my sandal!', 3); return; }
-    if (!buyer || buyer.state !== 'waiting') { say(cast.vee, 'Lois, have you sold my sandal?', 3); return; }
+    if (G.sandal.sold) { say(cast.vee, 'Thanks for my sandal!', 2); return; }
+    if (!buyer || buyer.state !== 'waiting') { say(cast.vee, 'Any buyer for my sandal?', 2.5); return; }
     const max = 3500 + Math.random() * 2500;
-    open(`<h2>V’s black sandal</h2><p><b>${buyer.name}</b> wants the sandal. V says it’s too big for Lois. How much?</p>`,
+    ask(`<b>${buyer.name}</b> wants V’s black sandal. How much?`,
       [3000, 4500, 6000].map((price) => [naira(price), () => {
         G.sandal.buyer = null;
         if (price <= max) {
           G.sandal.sold = price; world.sandal.visible = false;
-          say(buyer.person, 'Deal! I’ll take it.', 3); say(cast.vee, `${naira(price)}! Thank you o!`, 3.5);
-        } else say(buyer.person, 'Ah, that’s too much. Leave it.', 3);
+          say(cast.vee, `Sold! ${naira(price)}`, 2.5);
+        } else say(buyer.person, 'Too much!', 2.5);
       }]));
   }
 
   function nepa(on) {
     G.nepa = on ? 25 : 0;
-    if (on) { G.nepaDone++; say(cast.lois, 'NEPA has taken light!', 3.5); }
+    if (on) { G.nepaDone++; say(cast.lois, 'NEPA took light!', 2.5); }
   }
 
   // ---------- the evening ----------
@@ -289,10 +303,17 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
     renderAll();
   }
 
+  /** 9:30pm: everybody goes, Mama Yan Bui comes for her money, then the count. */
+  function closing() {
+    G.phase = 'closing';
+    customers.list.forEach((c) => { if (c.state === 'coming' || c.state === 'waiting') customers.leave(c); });
+    G.selected = null; returnBag(); renderAll();
+    if (G.mamaTotal) cast.mamaComes('collect'); else closeUp();
+  }
   function closeUp() {
     G.phase = 'closed';
-    customers.list.forEach((c) => { if (c.state === 'coming' || c.state === 'waiting') customers.leave(c); });
-    G.selected = null; returnBag();
+    G.awaraCost = G.mamaTotal || 0;
+    cast.mamaLeaves();
     const profit = G.sales - G.awaraCost;
     const before = tin;
     tin += Math.max(0, profit);
@@ -304,7 +325,7 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
       <p class="stars" aria-label="${stars} out of 5 stars">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</p>
       <dl class="sum">
         <div><dt>Sales</dt><dd>${naira(G.sales)}</dd></div>
-        <div><dt>Paid Mama Yan Bui for awara</dt><dd>−${naira(G.awaraCost)}</dd></div>
+        <div><dt>Mama Yan Bui’s awara money</dt><dd>−${naira(G.awaraCost)}</dd></div>
         <div class="total"><dt>Into the kiosk tin</dt><dd>${naira(Math.max(0, profit))}</dd></div>
         <div><dt>Customers served</dt><dd>${s.served}</dd></div>
         <div><dt>Walked off angry</dt><dd>${s.walkedOff}</dd></div>
@@ -319,12 +340,17 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
 
   function renderAll() { renderOrders(); renderBag(); renderStock(); renderPan(); renderHud(); }
 
-  cast.events.onMamaArrives = (mama) => {
-    const total = Math.round((AWARA_TOTAL.min + Math.random() * (AWARA_TOTAL.max - AWARA_TOTAL.min)) / 100) * 100;
-    const pieces = Math.round(total / AWARA_COST_EACH);
-    say(mama, `Lois, here’s the awara. Total is ${naira(total)}.`, 5);
-    open(`<h2>Mama Yan Bui brought the awara</h2><p><b>${pieces} pieces</b> of awara. She says the total is <b>${naira(total)}</b>.</p>`,
-      [[`Pay Mama ${naira(total)}`, () => { G.awaraCost += total; G.stock.awara += pieces; renderStock(); cast.mamaLeaves(); say(mama, 'Sell well o!', 2.5); }, 'primary']]);
+  // Mama Yan Bui drops the awara at opening and comes back for her money at closing
+  cast.events.onMamaDelivers = (mama) => {
+    G.mamaTotal = Math.round((AWARA_TOTAL.min + Math.random() * (AWARA_TOTAL.max - AWARA_TOTAL.min)) / 100) * 100;
+    G.stock.awara += Math.round(G.mamaTotal / AWARA_COST_EACH);
+    say(mama, 'I’ll come for my money at closing!', 2.5);
+    renderStock();
+  };
+  cast.events.onMamaCollects = (mama) => {
+    if (G.phase !== 'closing') return;
+    say(mama, `My awara money: ${naira(G.mamaTotal)}`, 3);
+    setTimeout(closeUp, 2600);
   };
 
   let tickUi = 0;
@@ -332,7 +358,7 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
     if (G.phase !== 'open' || G.paused) return;
     G.min += dt;                                   // one game minute per second
     onClock(G.min, G.nepa > 0);
-    if (G.pan.frying) { G.pan.t += dt; if (panProgress() > 1.7) { G.pan.frying = false; G.stats.burnt++; say(cast.racheal, 'It don burn! I removed it.', 3); } }
+    if (G.pan.frying) { G.pan.t += dt; if (panProgress() > 1.7) { G.pan.frying = false; G.stats.burnt++; say(cast.racheal, 'E don burn!', 2); } }
 
     // customers come faster as the evening goes on, and much faster in a rush
     const progress = (G.min - START) / (CLOSE - START);
@@ -344,25 +370,25 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
     G.rush = Math.max(0, G.rush - dt); if (G.rush === 0) cast.setRush(false);
     G.rushCooldown = Math.max(0, G.rushCooldown - dt);
     G.vCooldown = Math.max(0, G.vCooldown - dt);
-    if (G.nepa > 0) { G.nepa -= dt; if (G.nepa <= 0) say(cast.lois, 'Light don come back!', 2.5); }
+    if (G.nepa > 0) G.nepa -= dt;
     else if (G.nepaDone < 2 && G.min > 420 + G.nepaDone * 70 && Math.random() < dt / 40) nepa(true);
 
     // the walk-offs
     for (const c of customers.waiting) if (c.patience <= 0) {
-      say(c.person, pick(['I don tire!', 'Lois, I’m going.', 'This one too long!']), 3);
+      say(c.person, pick(['I don tire!', 'I’m going!', 'Too long!']), 2.5);
       customers.leave(c, 'angry'); G.stats.walkedOff++;
       if (G.selected === c) { G.selected = null; returnBag(); }
     }
     // the sandal buyer
     if (!G.sandal.asked && G.min > G.sandal.askAt) {
       const who = customers.waiting.find((c) => c.female) || customers.waiting[0];
-      if (who) { G.sandal.asked = true; G.sandal.buyer = who; say(who.person, 'Lois, how much is that black sandal?', 5); setTimeout(() => say(cast.vee, 'Tap me to sell it!', 3), 1800); }
+      if (who) { G.sandal.asked = true; G.sandal.buyer = who; say(who.person, 'How much for that sandal?', 3.5); packingEl.textContent = 'Someone wants V’s sandal: tap V'; }
     }
     // arguments
     G.argueIn -= dt;
     if (G.argueIn <= 0) G.argueIn = argue() ? 55 + Math.random() * 30 : 10;
 
-    if (G.min >= CLOSE) { closeUp(); return; }
+    if (G.min >= CLOSE) { closing(); return; }
     tickUi += dt;
     if (tickUi > .25) { tickUi = 0; renderOrders(); renderPan(); renderHud(); }
   }
@@ -382,7 +408,7 @@ export function createGame({ world, cast, customers, say, store, onClock }) {
 
   return {
     update, tapV, select,
-    get running() { return G.phase === 'open' && !G.paused; },
+    get running() { return (G.phase === 'open' || G.phase === 'closing') && !G.paused; },
     get min() { return G.min; },
     pause() { if (G.phase !== 'open' || G.paused) return; open('<h2>Paused</h2>', [['Carry on', () => {}, 'primary']]); },
   };
