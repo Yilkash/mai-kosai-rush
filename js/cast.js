@@ -18,7 +18,7 @@ export function buildCast(scene, world) {
   const L = SPOTS.lois, B = SPOTS.bench;
 
   // Racheal on her stool in the zinc house, frying
-  const racheal = add({ skin: '#7a4a2e', top: '#6a4c9c', wrapperMap: ankara('#2e5a8a', '#f2b84b', '#c62f2a'), hair: 'locs', female: true, h: .98 },
+  const racheal = add({ skin: '#7a4a2e', top: '#6a4c9c', bottom: '#2b3340', hair: 'locs', female: true, h: .98 },   // trousers, not a wrapper
     { x: SPOTS.stool.x, z: SPOTS.stool.z, seat: .43, face: [SPOTS.fire.x, SPOTS.fire.z] });
   const spoon = new THREE.Group();
   spoon.add(mesh(new THREE.CylinderGeometry(.008, .008, .5, 6), M({ color: '#aaa', metalness: .7 }), { y: -.25 }));
@@ -94,7 +94,8 @@ export function buildCast(scene, world) {
   const v = (x, z) => new THREE.Vector3(x, 0, z);
 
   // the two who come by while they set up
-  const naomi = add({ skin: '#5a3722', top: '#8a3a2a', wrapperMap: ankara('#2f6b4a', '#e9d27a', '#8a3a2a'), hair: 'headtie', female: true, h: .96 }, { x: -9, z: 9 });
+  const naomi = add({ skin: '#5a3722', top: '#8a3a2a', wrapperMap: ankara('#2f6b4a', '#e9d27a', '#8a3a2a'), hair: 'headtie', female: true, h: .86 }, { x: -9, z: 9 });
+  naomi.userData.hips.scale.x = .88;   // Mama Naomi is small and slim
   const dany = add({ skin: '#4f3220', top: '#e9e1d2', bottom: '#5d4a37', hair: 'cap', sleeves: 'long', h: 1.0 }, { x: GATE.x, z: GATE.z });
   naomi.visible = dany.visible = false;
   const say = (p, text, sec = 2.6) => events.say?.(p, text, sec);

@@ -23,3 +23,4 @@
 - **Upright Stall view must show from the speaker/firewood on the left to the bench on the right**; an earlier, tighter framing hid Mama Naomi and Tricia off screen.
 - **Closing detail:** Lois washes in a basin at the FRONT, by her table (not at Racheal's place). Racheal sits and rests a little before pouring the oil into the white jerrycan.
 - **Pause** has a small "Start again from evening 1" (with a "Sure?" step that empties the tin).
+- **Racheal wears trousers** (not a wrapper). **Mama Naomi is small and slim** (h .86). Big screens: the choice bar and serving card stay a set width in the middle.

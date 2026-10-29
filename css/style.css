@@ -197,3 +197,9 @@ button { border-radius: 12px; font-weight: 600; letter-spacing: -.005em; }
 body:not(.tall) .sbtns button, body:not(.tall) .sbtns .chip { min-height: 40px; font-size: 13px; }
 body:not(.tall) .packbtn { min-height: 44px; font-size: 15px; }
 .sbtns .cnt { margin-left: 8px; font-variant-numeric: tabular-nums; opacity: .8; }
+
+/* big screens: the choice bar and the serving card stay a sensible width in the middle */
+@media (min-width: 900px) {
+  .decide { left: 50%; right: auto; transform: translateX(-50%); width: 600px; }
+  body:not(.tall) .serve { left: 50%; transform: translateX(-50%); width: 480px; }
+}

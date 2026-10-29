@@ -144,10 +144,12 @@ function addHair(head, kind) {
     }
   }
   if (kind === 'longbraids') {   // Lois: long plaited braids, past the shoulders
-    const bM = M({ color: '#1b1411', roughness: .9 }); cap(.109, bM);
-    for (let i = 0; i < 24; i++) {
-      const a = (-120 + i * (240 / 23)) * Math.PI / 180 + Math.PI;
-      head.add(mesh(new THREE.CapsuleGeometry(.01, .46, 3, 5), bM, { x: Math.sin(a) * .1, y: -.21, z: Math.cos(a) * .1 - .025, rx: Math.cos(a) * .1, rz: -Math.sin(a) * .08 }));
+    // separate braids with gaps between them, in two shades so each one reads on its own
+    const bM = M({ color: '#1b1411', roughness: .9 }), bM2 = M({ color: '#3a271c', roughness: .8 }); cap(.106, bM);
+    for (let i = 0; i < 21; i++) {
+      const a = (-115 + i * (230 / 20)) * Math.PI / 180 + Math.PI;
+      const len = .4 + (i % 3) * .03;
+      head.add(mesh(new THREE.CapsuleGeometry(.0095, len, 3, 5), i % 2 ? bM2 : bM, { x: Math.sin(a) * .108, y: -.06 - len / 2, z: Math.cos(a) * .108 - .02, rx: Math.cos(a) * .16, rz: -Math.sin(a) * .14 }));
     }
   }
   if (kind === 'weave') {     // a long weave to the shoulders
