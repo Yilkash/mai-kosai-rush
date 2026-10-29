@@ -99,16 +99,21 @@ export function buildWorld(scene, T) {
   const Tb = SPOTS.table;
   scene.add(mesh(box(1.15, .06, .62), wood, { x: Tb.x, y: .8, z: Tb.z }));
   [[-.5, -.26], [.5, -.26], [-.5, .26], [.5, .26]].forEach(([dx, dz]) => scene.add(mesh(box(.06, .8, .06), wood, { x: Tb.x + dx, y: .4, z: Tb.z + dz })));
-  scene.add(mesh(new THREE.CylinderGeometry(.27, .2, .2, 20, 1, true), M({ map: T.holes, side: THREE.DoubleSide, roughness: .6 }), { x: Tb.x - .2, y: .93, z: Tb.z }));
+  const basket = mesh(new THREE.CylinderGeometry(.27, .2, .2, 20, 1, true), M({ map: T.holes, side: THREE.DoubleSide, roughness: .6 }), { x: Tb.x - .2, y: .93, z: Tb.z });
+  scene.add(basket);
   scene.add(mesh(new THREE.CircleGeometry(.2, 20), M({ color: '#2f9a4a' }), { x: Tb.x - .2, y: .835, z: Tb.z, rx: -Math.PI / 2 }));
   // what is in the green basket: shown up to 24, as the stock rises and falls
   const basketKosai = [];
   for (let i = 0; i < 24; i++) { const a = rnd(0, 6.28), r = rnd(0, .19); const k = mesh(kosaiGeo, kosaiMat, { x: Tb.x - .2 + Math.cos(a) * r, y: .87 + (i / 24) * .1, z: Tb.z + Math.sin(a) * r }); k.visible = false; basketKosai.push(k); scene.add(k); }
-  scene.add(mesh(new THREE.CylinderGeometry(.08, .08, .2, 16), new THREE.MeshPhysicalMaterial({ color: '#dff3f8', roughness: .1, transparent: true, opacity: .5 }), { x: Tb.x + .3, y: .93, z: Tb.z - .05 }));
+  const jar = mesh(new THREE.CylinderGeometry(.08, .08, .2, 16), new THREE.MeshPhysicalMaterial({ color: '#dff3f8', roughness: .1, transparent: true, opacity: .5 }), { x: Tb.x + .3, y: .93, z: Tb.z - .05 });
+  scene.add(jar);
   scene.add(mesh(new THREE.CylinderGeometry(.07, .07, .14, 16), M({ color: '#c8331f' }), { x: Tb.x + .3, y: .9, z: Tb.z - .05 }));
   scene.add(mesh(new THREE.CylinderGeometry(.008, .008, .26, 6), M({ color: '#bbb', metalness: .6 }), { x: Tb.x + .33, y: 1.0, z: Tb.z - .05, rz: -.3 }));
   scene.add(mesh(box(.18, .02, .14), M({ color: '#f4f2ec' }), { x: Tb.x + .05, y: .84, z: Tb.z + .18 }));
-  scene.add(mesh(box(.2, .03, .16), M({ color: '#141414', roughness: .4 }), { x: Tb.x + .38, y: .845, z: Tb.z + .18 }));
+  // the black nylon an order is packed into; it fills out as things go in
+  const nylon = mesh(new THREE.SphereGeometry(.1, 16, 12), M({ color: '#141414', roughness: .35 }), { x: Tb.x + .3, y: .88, z: Tb.z + .17 });
+  nylon.scale.set(1, .35, 1);
+  scene.add(nylon);
   const flask = new THREE.Group(); flask.position.set(Tb.x - .1, 0, Tb.z); scene.add(flask);
   flask.add(mesh(new THREE.CylinderGeometry(.19, .19, .52, 20), M({ color: '#c62f2a', roughness: .4 }), { y: .26 }));
   flask.add(mesh(new THREE.CylinderGeometry(.13, .15, .08, 16), M({ color: '#8e1f1b' }), { y: .56 }));
@@ -193,5 +198,7 @@ export function buildWorld(scene, T) {
     const c = new THREE.IcosahedronGeometry(rnd(1.8, 2.4), 1); scene.add(mesh(c, crown, { x, y: 4, z }));
   });
 
-  return { windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai, panKosaiMat, basketKosai, sandal };
+  // Things on and under Lois's table that a tap can land on.
+  const tappable = { basket, jar, flask, nylon };
+  return { windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai, panKosaiMat, basketKosai, sandal, nylon, tappable };
 }

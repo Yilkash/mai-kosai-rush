@@ -15,48 +15,27 @@
 </head>
 <body>
   <div id="app"></div>
+  <div id="labels"></div>
   <div id="bubbles" aria-live="polite"></div>
 
   <div class="top">
     <div class="clockbox"><b id="clock">5:30 pm</b><small id="money">₦0 tonight</small></div>
-    <div class="tin"><small id="tinLabel">Kiosk tin</small><div class="tinbar"><i id="tinFill"></i></div></div>
+    <div class="target"><small id="targetLabel">Evening 1</small><div class="tbar"><i id="targetFill"></i></div></div>
     <div class="actions">
+      <button id="viewBtn" type="button">Stall view</button>
       <button id="sound" type="button" aria-pressed="false">Sound: off</button>
       <button id="pause" type="button">Pause</button>
-      <button id="fullscreen" type="button">Full screen</button>
     </div>
   </div>
 
-  <div id="orders" class="orders" aria-label="Orders"></div>
+  <!-- Racheal's pan: the 3D view is drawn into this box; tapping it fries and lifts -->
+  <button id="inset" class="inset" type="button" aria-label="Racheal's pan"><span id="insetLabel" class="insetlabel">Racheal · tap to add batter</span></button>
 
-  <div class="pan">
-    <div class="panlabel" id="panLabel">Pan is empty</div>
-    <div class="panbar"><i id="panFill"></i><span class="golden" title="Golden"></span></div>
-    <button id="panBtn" type="button">Add batter</button>
-  </div>
-
-  <button id="segun" class="segun" type="button">Segun: post on WhatsApp</button>
-
-  <div class="tray">
-    <div class="trayinfo"><div id="packing" class="packing">Tap an order card to start packing</div><div id="stock" class="stock"></div></div>
-    <div class="traybtns">
-      <button type="button" data-add="kosai">Kosai +1</button>
-      <button type="button" data-add="awara">Awara +1</button>
-      <button type="button" data-add="kunu">Kunu +1</button>
-      <button type="button" id="pepper" aria-pressed="false">Pepper</button>
-      <button type="button" id="clearBag">Clear</button>
-      <button type="button" id="pack" class="primary">Pack in black nylon</button>
-    </div>
-  </div>
+  <button id="segun" class="segun" type="button" hidden>Oluwasegun: post</button>
+  <p id="hint" class="hint" aria-live="polite"></p>
 
   <div id="decide" class="decide" role="group" aria-live="polite" hidden></div>
-
   <div id="modal" class="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
-
-  <div class="tip" id="tip" hidden>
-    <span>Best played with your phone sideways</span>
-    <button id="tipClose" type="button" aria-label="Close tip">✕</button>
-  </div>
 
   <div class="loading" id="loading">Lighting the fire…</div>
   <script type="module" src="js/main.js"></script>

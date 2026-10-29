@@ -26,7 +26,8 @@ export function buildCast(scene) {
   racheal.userData.arms[1].hand.add(spoon);
 
   // Lois beside the end post, behind her table
-  const lois = add({ skin: '#b9805a', top: '#d84a7a', wrapperMap: ankara('#f2b84b', '#2f7d4f', '#7a2a4a'), hair: 'bun', female: true, h: 1.0 },
+  // Lois: a fitted top and jeans, earrings, her bun. No wrapper.
+  const lois = add({ skin: '#b9805a', top: '#d84a7a', bottom: '#2f4f7a', hair: 'bun', female: true, earrings: true, shoes: '#f4f2ec', h: 1.0 },
     { x: L.x, z: L.z, face: [1.6, 7] });
 
   // the bench: Oluwasegun, V and Baba Malam, facing Lois
@@ -138,7 +139,7 @@ export function buildCast(scene) {
   }
 
   return {
-    update, events, vee, seg, lois, mama, racheal, get mamaHere() { return mamaStage === 'collecting'; },
+    update, events, vee, seg, lois, mama, racheal, awara, get mamaHere() { return mamaStage === 'collecting'; },
     /** Mama Yan Bui comes: 'deliver' at opening, 'collect' at closing. */
     mamaComes(mode = 'deliver') {
       mamaMode = mode; mama.visible = true; mama.position.copy(MAMA_FROM); mamaStage = 'walking';

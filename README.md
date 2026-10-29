@@ -4,7 +4,7 @@ A 3D browser game set at the Mai Kosai stall: Racheal fries kosai in the zinc ho
 
 Play: https://yilkash.github.io/mai-kosai-rush/
 
-How to play: one evening runs 5:30 to 9:30pm (about four minutes). Lift Racheal's kosai into the green basket before they burn, tap an order card, add the kosai, awara and kunu, set the pepper, and pack it in a black nylon. Give the right change for cash and catch the fake transfer alerts. Settle arguments, tap V to sell her sandal, and let Oluwasegun post on WhatsApp for a rush. NEPA takes light now and then. What you make, less what you pay Mama Yan Bui for the awara, goes into the kiosk tin (₦100,000 goal), saved on the phone.
+How to play: you stand behind Lois's table. Tap Racheal's pan in the corner window to add batter, and again when the kosai glow golden. Tap a customer, then tap the green basket, the awara, the red flask under the table and the pepper jar to fill their black nylon, and tap the customer again to hand it over. Give the right change for cash and catch the fake transfer alerts. Tap **Stall view** to see the whole place (the game cuts there by itself when something happens). Each evening (5:30 to 9:30pm, about four minutes) has a sales target; hit it and the night's profit, less Mama Yan Bui's awara money, goes into the kiosk tin (₦100,000 goal) and the next evening opens with something new: transfers and fake alerts, NEPA, arguments, Oluwasegun's WhatsApp rush, V's sandal. Progress is saved on the phone.
 
 `?speed=10` on the address runs the evening faster, for testing.
 
@@ -15,7 +15,7 @@ How to play: one evening runs 5:30 to 9:30pm (about four minutes). Lift Racheal'
 |---|---|
 | `index.html` | The page and its buttons |
 | `css/style.css` | Screen layout |
-| `js/main.js` | Renderer, camera (sideways and upright), time slider, sound and full screen |
+| `js/main.js` | Renderer, the two cameras (Table and Stall), Racheal's pan window, taps, order bubbles and sound |
 | `js/world.js` | The stall, the zinc house, the street and everything in it |
 | `js/people.js` | How a person is built and posed |
 | `js/cast.js` | The regulars (Lois, Racheal, V, Oluwasegun, Baba Malam, Mama Yan Bui) and how they move |

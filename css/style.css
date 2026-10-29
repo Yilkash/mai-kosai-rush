@@ -1,8 +1,8 @@
-/* The game screen: one dark night-market look. */
+/* The game screen: one dark night-market look, and as little on top of the stall as possible. */
 :root {
   --ink: #fff7ea;
   --ink-dark: #2a1d14;
-  --panel: rgba(26, 20, 16, .76);
+  --panel: rgba(26, 20, 16, .74);
   --button: #3d2f26;
   --accent: #f2b84b;
   --green: #2f9a4a;
@@ -20,95 +20,108 @@ body {
 }
 #app { position: fixed; inset: 0; }
 canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#labels, #bubbles { position: fixed; inset: 0; pointer-events: none; }
+#bubbles { z-index: 10; }
 
 button {
   border: 0; border-radius: 10px; background: var(--button); color: var(--ink);
-  font: 600 12px Outfit, system-ui, sans-serif; padding: 7px 10px; cursor: pointer; white-space: nowrap;
-  min-height: 34px;
+  font: 600 12px Outfit, system-ui, sans-serif; padding: 7px 10px; cursor: pointer; white-space: nowrap; min-height: 34px;
 }
 button:disabled { opacity: .45; cursor: default; }
 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 button[aria-pressed="true"] { background: var(--accent); color: var(--ink-dark); }
 button.primary { background: var(--accent); color: var(--ink-dark); font-weight: 700; }
 
-/* ---- top bar */
+/* ---- top bar: the clock, tonight's target, three small buttons */
 .top {
   position: fixed; top: calc(6px + env(safe-area-inset-top, 0px));
   left: max(8px, env(safe-area-inset-left, 0px)); right: max(8px, env(safe-area-inset-right, 0px));
-  display: flex; align-items: center; gap: 10px; pointer-events: none;
+  display: flex; align-items: center; gap: 8px; pointer-events: none; z-index: 12;
 }
 .top > * { pointer-events: auto; }
 .clockbox { background: var(--panel); border-radius: 10px; padding: 3px 10px; line-height: 1.05; }
 .clockbox b { font-family: "Baloo 2", Outfit, sans-serif; font-size: 18px; }
 .clockbox small { display: block; font-size: 11px; color: var(--accent); font-weight: 700; }
-.tin { background: var(--panel); border-radius: 10px; padding: 4px 10px; min-width: 0; flex: 0 1 230px; }
-.tin small { font-size: 10px; color: var(--muted); white-space: nowrap; }
-.tinbar { height: 6px; border-radius: 4px; background: #3d332c; overflow: hidden; margin-top: 3px; }
-.tinbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f2b84b, #e07b2a); }
+.target { background: var(--panel); border-radius: 10px; padding: 4px 10px; min-width: 0; flex: 0 1 240px; }
+.target small { font-size: 10.5px; color: var(--muted); white-space: nowrap; font-weight: 600; }
+.tbar { height: 6px; border-radius: 4px; background: #3d332c; overflow: hidden; margin-top: 3px; }
+.tbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #7dde6b, #2f9a4a); }
 .actions { margin-left: auto; display: flex; gap: 6px; }
+.actions button { background: var(--panel); }
 
-/* ---- order cards along the top */
-.orders {
-  position: fixed; top: calc(50px + env(safe-area-inset-top, 0px));
-  left: max(8px, env(safe-area-inset-left, 0px)); right: max(190px, env(safe-area-inset-right, 0px));
-  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
+/* ---- Racheal's pan window, top left */
+.inset {
+  position: fixed; left: max(8px, env(safe-area-inset-left, 0px)); top: calc(52px + env(safe-area-inset-top, 0px));
+  width: min(36vw, 190px); aspect-ratio: 4 / 3; padding: 0; background: transparent; border-radius: 14px;
+  border: 3px solid rgba(255, 255, 255, .35); z-index: 5; display: flex; align-items: flex-end; justify-content: center;
 }
-.orders::-webkit-scrollbar { display: none; }
-.card {
-  flex: 0 0 auto; width: 132px; text-align: left; background: var(--cream); color: var(--ink-dark);
-  border-radius: 10px; padding: 5px 8px; display: grid; gap: 2px; white-space: normal; min-height: 0;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, .3); border: 2px solid transparent;
+.inset.hot { border-color: var(--accent); box-shadow: 0 0 18px rgba(242, 184, 75, .7); animation: glow .7s infinite alternate; }
+@keyframes glow { to { box-shadow: 0 0 28px rgba(242, 184, 75, .95); } }
+@media (prefers-reduced-motion: reduce) { .inset.hot { animation: none; } }
+.insetlabel {
+  margin-bottom: -10px; background: var(--accent); color: var(--ink-dark); font-weight: 800; font-size: 11.5px;
+  border-radius: 8px; padding: 2px 8px; white-space: nowrap;
 }
-.card.on { border-color: var(--accent); background: #fff1cf; }
-.card b { font-size: 11px; color: #7a5a3c; }
-.card span { font-size: 11px; line-height: 1.25; font-weight: 600; }
-.pat { display: block; height: 4px; border-radius: 3px; background: #e7d8c3; overflow: hidden; }
-.pat i { display: block; height: 100%; }
-.pat.ok i { background: var(--green); } .pat.warn i { background: var(--warn); } .pat.bad i { background: var(--bad); }
+.inset:not(.hot) .insetlabel { background: rgba(26, 20, 16, .9); color: var(--ink); }
 
-/* ---- the pan, at the left */
-.pan {
-  position: fixed; left: max(8px, env(safe-area-inset-left, 0px)); bottom: calc(92px + env(safe-area-inset-bottom, 0px));
-  width: 170px; background: var(--panel); border-radius: 12px; padding: 7px 8px; display: grid; gap: 5px;
-}
-.panlabel { font-size: 12px; font-weight: 700; }
-.panbar { position: relative; height: 8px; border-radius: 5px; background: #3d332c; overflow: hidden; }
-.panbar i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #e8cf9a, #c9862e 50%, #3a2414); }
-.panbar .golden { position: absolute; top: 0; bottom: 0; left: 50%; width: 25%; border: 2px solid var(--accent); border-radius: 4px; }
-#panBtn.hot { background: var(--accent); color: var(--ink-dark); animation: pulse .7s infinite alternate; }
-@keyframes pulse { to { transform: scale(1.05); } }
-@media (prefers-reduced-motion: reduce) { #panBtn.hot { animation: none; } }
-
-/* ---- Oluwasegun's button, at the right */
 .segun {
-  position: fixed; right: max(8px, env(safe-area-inset-right, 0px)); bottom: calc(92px + env(safe-area-inset-bottom, 0px));
-  background: #25d366; color: #08391c; font-weight: 700;
+  position: fixed; right: max(8px, env(safe-area-inset-right, 0px)); top: calc(52px + env(safe-area-inset-top, 0px));
+  background: #25d366; color: #08391c; font-weight: 700; z-index: 5;
 }
-.segun:disabled { background: var(--button); color: var(--ink); }
+.segun:disabled { background: var(--panel); color: var(--ink); }
+.segun[hidden] { display: none; }
 
-/* ---- the packing tray, along the bottom */
-.tray {
+.hint {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  margin: 0; max-width: calc(100% - 24px); background: var(--panel); border-radius: 999px; padding: 6px 14px;
+  font-size: 12.5px; font-weight: 600; text-align: center; z-index: 5;
+}
+.hint:empty { display: none; }
+
+/* ---- order bubbles over customers' heads: pictures, not words */
+.order {
+  position: absolute; transform: translate(-50%, -100%); background: var(--cream); color: var(--ink-dark);
+  border-radius: 12px; padding: 4px 7px 7px; display: flex; gap: 4px; align-items: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .4); font-weight: 800; font-size: 12px; white-space: nowrap;
+}
+.order::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--cream); border-bottom: 0; }
+.order.sel { outline: 3px solid var(--accent); }
+.order .nm { font-size: 10px; color: #7a5a3c; margin-right: 2px; }
+.ic { display: inline-block; width: 15px; height: 15px; vertical-align: -3px; }
+.ic.k { border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e2a64a, #b8702a); }
+.ic.a { border-radius: 3px; background: #f4efe2; border: 1px solid #cbbfa6; }
+.ic.u { border-radius: 2px 2px 5px 5px; background: #c62f2a; }
+.ic.p { border-radius: 50% 50% 50% 10%; background: #c8331f; transform: rotate(-30deg); }
+.ic.np { border-radius: 50% 50% 50% 10%; background: #c9c3b8; position: relative; }
+.ic.np::after { content: ""; position: absolute; left: -2px; right: -2px; top: 6px; height: 2px; background: #7a2a1a; transform: rotate(-45deg); }
+.done { color: #2f9a4a; }
+.order .pat { position: absolute; left: 6px; right: 6px; bottom: 2px; height: 3px; border-radius: 2px; background: #e7d8c3; overflow: hidden; }
+.order .pat i { display: block; height: 100%; }
+
+/* small labels on the table's things, the first evening */
+.tag { position: absolute; transform: translate(-50%, 0); background: rgba(26, 20, 16, .82); border-radius: 8px; padding: 2px 7px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+/* ---- choices: a bar at the bottom, so the stall stays in view */
+.decide {
   position: fixed; left: max(8px, env(safe-area-inset-left, 0px)); right: max(8px, env(safe-area-inset-right, 0px));
-  bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-  background: var(--panel); border-radius: 12px; padding: 6px 8px; display: grid; gap: 5px;
+  bottom: calc(6px + env(safe-area-inset-bottom, 0px)); z-index: 15;
+  background: var(--cream); color: var(--ink-dark); border-radius: 12px; padding: 7px 9px; display: grid; gap: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
 }
-.trayinfo { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; }
-.packing { font-weight: 700; color: var(--accent); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stock { color: var(--muted); white-space: nowrap; }
-.traybtns { display: flex; gap: 6px; }
-.traybtns button { flex: 1 1 0; }
-.traybtns #pack { flex: 1.6 1 0; }
+.decide[hidden] { display: none; }
+.dtext { font-size: 13px; line-height: 1.3; }
+.dtext .alert { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px; background: #fff; border: 1px solid #e3d6c0; font-size: 12px; }
+.dchoices { display: flex; gap: 6px; flex-wrap: wrap; }
+.dchoices button { flex: 1 1 90px; background: #efe1c9; color: var(--ink-dark); font-size: 13px; min-height: 36px; }
+.dchoices button.primary { background: var(--accent); }
 
-/* ---- pop-ups */
+/* ---- the start, pause and end screens */
 .modal { position: fixed; inset: 0; background: rgba(10, 7, 5, .55); display: flex; align-items: center; justify-content: center; padding: 12px; z-index: 20; }
 .modal[hidden] { display: none; }
-.sheet {
-  background: var(--cream); color: var(--ink-dark); border-radius: 16px; padding: 14px 16px; width: min(440px, 100%);
-  max-height: calc(100% - 8px); overflow-y: auto; box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
-}
-.sheet h2 { font-family: "Baloo 2", Outfit, sans-serif; margin: 0 0 4px; font-size: 20px; line-height: 1.15; text-wrap: balance; }
+.sheet { background: var(--cream); color: var(--ink-dark); border-radius: 16px; padding: 14px 16px; width: min(440px, 100%); max-height: calc(100% - 8px); overflow-y: auto; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); }
+.sheet h2 { font-family: "Baloo 2", Outfit, sans-serif; margin: 0 0 4px; font-size: 21px; line-height: 1.15; text-wrap: balance; }
 .sheet p { margin: 4px 0; font-size: 14px; line-height: 1.4; }
-.sheet .big { font-family: "Baloo 2", Outfit, sans-serif; font-size: 30px; margin: 0; }
+.sheet .news { background: #fff1cf; border-radius: 8px; padding: 6px 9px; font-weight: 600; }
 .sheet .stars { font-size: 26px; color: #d08a1a; margin: 0; letter-spacing: 2px; }
 .choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .choices button { flex: 1 1 120px; background: #efe1c9; color: var(--ink-dark); font-size: 13px; min-height: 40px; }
@@ -121,70 +134,19 @@ button.primary { background: var(--accent); color: var(--ink-dark); font-weight:
 .sum dt { color: #6a5a4a; } .sum dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
 .sum .total dd { color: #2f7d4f; font-size: 15px; }
 
-/* ---- in-game choices: a bar where the packing tray is, so the stall stays in view */
-.decide {
-  position: fixed; left: max(8px, env(safe-area-inset-left, 0px)); right: max(8px, env(safe-area-inset-right, 0px));
-  bottom: calc(6px + env(safe-area-inset-bottom, 0px)); z-index: 15;
-  background: var(--cream); color: var(--ink-dark); border-radius: 12px; padding: 7px 9px; display: grid; gap: 6px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
-}
-.decide[hidden], .tray[hidden] { display: none; }
-.dtext { font-size: 13px; line-height: 1.3; }
-.dtext .alert { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px; background: #fff; border: 1px solid #e3d6c0; font-size: 12px; }
-.dchoices { display: flex; gap: 6px; flex-wrap: wrap; }
-.dchoices button { flex: 1 1 90px; background: #efe1c9; color: var(--ink-dark); font-size: 13px; min-height: 36px; }
-.dchoices button.primary { background: var(--accent); }
-
-/* ---- speech bubbles, placed over a person's head each frame */
-#bubbles { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+/* ---- speech bubbles and the +₦ when money comes in */
 .say {
-  position: absolute; transform: translate(-50%, -100%);
-  max-width: 200px; background: var(--cream); color: var(--ink-dark); border-radius: 12px; padding: 5px 9px;
-  font-size: 12px; font-weight: 700; line-height: 1.3; box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+  position: absolute; transform: translate(-50%, -100%); max-width: 200px; background: var(--cream); color: var(--ink-dark);
+  border-radius: 12px; padding: 5px 9px; font-size: 12px; font-weight: 700; line-height: 1.3; box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
 }
-.say::after {
-  content: ""; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%);
-  border: 7px solid transparent; border-top-color: var(--cream); border-bottom: 0;
-}
-
-.say.coin {
-  background: none; box-shadow: none; padding: 0; color: #7dde6b; font-family: "Baloo 2", Outfit, sans-serif; font-size: 17px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
-}
+.say::after { content: ""; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); border: 7px solid transparent; border-top-color: var(--cream); border-bottom: 0; }
+.say.coin { background: none; box-shadow: none; padding: 0; color: #7dde6b; font-family: "Baloo 2", Outfit, sans-serif; font-size: 17px; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
 .say.coin::after { display: none; }
 
-.tip {
-  position: fixed; left: 50%; transform: translateX(-50%); top: calc(118px + env(safe-area-inset-top, 0px));
-  display: flex; align-items: center; gap: 8px; background: var(--panel); border-radius: 999px; padding: 4px 4px 4px 12px; font-size: 12px; font-weight: 600; z-index: 5;
-}
-.tip button { border-radius: 999px; padding: 4px 8px; min-height: 0; }
-.tip[hidden] { display: none; }
-body:not(.tall) .tip { display: none; }
+.loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-family: "Baloo 2", Outfit, sans-serif; font-size: 22px; background: #120e0b; z-index: 30; }
 
-.loading {
-  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-family: "Baloo 2", Outfit, sans-serif; font-size: 22px; background: #120e0b; z-index: 30;
-}
-
-/* ---- short landscape phones: tighter */
-@media (max-height: 420px) {
-  .orders { top: calc(44px + env(safe-area-inset-top, 0px)); }
-  .card { width: 118px; padding: 4px 7px; }
-  .pan, .segun { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
-  .pan { width: 150px; padding: 5px 7px; }
-  .traybtns button { min-height: 32px; padding: 5px 4px; font-size: 11.5px; }
-}
-/* ---- upright phones: lighter, so the stall still shows */
-body.tall .tin { display: none; }
-body.tall .top { gap: 6px; }
-body.tall .actions button { padding: 5px 8px; min-height: 30px; font-size: 11px; }
-body.tall .orders { top: calc(46px + env(safe-area-inset-top, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); }
-body.tall .card { width: 104px; padding: 4px 6px; }
-body.tall .card span { font-size: 10.5px; }
-body.tall .traybtns { flex-wrap: wrap; }
-body.tall .traybtns button { flex: 1 1 30%; min-height: 30px; padding: 4px; font-size: 11px; }
-body.tall .trayinfo { flex-direction: column; gap: 1px; }
-body.tall .pan, body.tall .segun { bottom: calc(118px + env(safe-area-inset-bottom, 0px)); }
-body.tall .pan { width: 140px; padding: 5px 7px; }
-body.tall .segun { font-size: 11px; padding: 5px 8px; }
-body.tall .actions #fullscreen { display: none; }
+/* upright phones: the target bar goes under the clock */
+body.tall .top { flex-wrap: wrap; }
+body.tall .target { order: 3; flex: 1 1 100%; }
+body.tall .inset { top: calc(96px + env(safe-area-inset-top, 0px)); }
+body.tall .segun { top: calc(96px + env(safe-area-inset-top, 0px)); }

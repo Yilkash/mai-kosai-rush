@@ -50,6 +50,9 @@ export function createCustomers(scene) {
     const spot = freeSpot();
     if (!spot) return null;
     const female = Math.random() < .5;
+    // a name nobody at the table already has
+    const taken = new Set(list.filter((c) => c.state !== 'gone').map((c) => c.name));
+    const names = NAMES[female ? 'f' : 'm'].filter((n) => !taken.has(n));
     const person = makeHuman(look(female));
     const from = pick(ENTRANCES);
     person.position.copy(from);
@@ -59,7 +62,7 @@ export function createCustomers(scene) {
       person.userData.scrolls = true;
     }
     const c = {
-      id: nextId++, name: pick(NAMES[female ? 'f' : 'm']), female, person, spot, order, state: 'coming',
+      id: nextId++, name: pick(names.length ? names : NAMES[female ? 'f' : 'm']), female, person, spot, order, state: 'coming',
       arrivedAt: null, patience: 1, waitSeconds: rnd(50, 75), mood: 'ok',
     };
     list.push(c);
