@@ -1,6 +1,6 @@
 // Keeps the game playable offline after the first visit.
 // Scoped to /mai-kosai-rush/ only: the other apps on yilkash.github.io are not touched.
-const CACHE = 'mai-kosai-rush-v11';
+const CACHE = 'mai-kosai-rush-v12';
 const FILES = [
   './', './index.html', './css/style.css', './manifest.webmanifest',
   './js/main.js', './js/textures.js', './js/sky.js', './js/util.js', './js/world.js',
@@ -13,9 +13,11 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 // Network first so updates arrive; the cache answers when there is no signal.
+// no-cache asks GitHub whether the file changed, instead of using the browser's
+// ten-minute copy, so a new version shows on the next open.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  e.respondWith(fetch(e.request).then((res) => {
+  e.respondWith(fetch(e.request, { cache: 'no-cache' }).then((res) => {
     if (res.ok && new URL(e.request.url).origin === location.origin) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
     return res;
   }).catch(() => caches.match(e.request)));

@@ -18,7 +18,7 @@ export function buildCast(scene, world) {
   const L = SPOTS.lois, B = SPOTS.bench;
 
   // Racheal on her stool in the zinc house, frying
-  const racheal = add({ skin: '#7a4a2e', top: '#6a4c9c', bottom: '#2b3340', hair: 'locs', female: true, h: .98 },   // trousers, not a wrapper
+  const racheal = add({ skin: '#7a4a2e', top: '#6a4c9c', bottom: '#3a5f8f', hair: 'locs', female: true, h: .98 },   // trousers, not a wrapper
     { x: SPOTS.stool.x, z: SPOTS.stool.z, seat: .43, face: [SPOTS.fire.x, SPOTS.fire.z] });
   const spoon = new THREE.Group();
   spoon.add(mesh(new THREE.CylinderGeometry(.008, .008, .5, 6), M({ color: '#aaa', metalness: .7 }), { y: -.25 }));
