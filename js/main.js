@@ -156,13 +156,13 @@ function placeOrders() {
 }
 
 // name tags over the regulars, in Stall view, so people know who is who
-const REGULARS = [[cast.lois, 'Lois'], [cast.racheal, 'Racheal'], [cast.seg, 'Oluwasegun'], [cast.vee, 'V'], [cast.baba, 'Baba Malam'], [cast.mama, 'Mama Yan Bui']];
+const REGULARS = [[cast.lois, 'Lois'], [cast.racheal, 'Racheal'], [cast.seg, 'Oluwasegun'], [cast.vee, 'V'], [cast.mama, 'Mama Yan Bui'], [cast.naomi, 'Mama Naomi'], [cast.dany, 'Baban Dany']];
 const nameEls = REGULARS.map(([, text]) => { const el = document.createElement('div'); el.className = 'tag'; el.textContent = text; labels.appendChild(el); return el; });
 const tagPos = new THREE.Vector3();
 function placeNames(show) {
   REGULARS.forEach(([p], i) => {
     const el = nameEls[i];
-    if (!show || !p.visible || orderEls.has(p)) { el.style.display = 'none'; return; }
+    if (!show || !p.visible || orderEls.has(p) || talking.some((b) => b.person === p && !b.kind)) { el.style.display = 'none'; return; }
     p.getWorldPosition(tagPos); tagPos.y += 1.85 * (p.userData.h || 1) + (p.userData.carry === 'head' ? .25 : 0);
     tagPos.project(camera);
     el.style.display = '';
@@ -170,6 +170,8 @@ function placeNames(show) {
     el.style.top = `${(-tagPos.y * .5 + .5) * innerHeight - 14}px`;
   });
 }
+
+cast.events.say = say;   // the cast's own lines, during the opening
 
 // ---- the game
 const game = createGame({ world, cast, customers, say, store, onClock: setTime, focus });

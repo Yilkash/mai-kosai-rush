@@ -32,6 +32,7 @@ export function makeHuman(o) {
     skirt = null,     // a short skirt in this colour, bare legs
     dress = null,     // a dress to the knee in this colour (top and skirt together)
     earrings = false, handbag = null,
+    curvy = false,    // fuller hips and bum
   } = o;
   if (dress) { o.top = dress; }
   const skinM = M({ color: skin, roughness: .6 });
@@ -45,6 +46,7 @@ export function makeHuman(o) {
 
   const torso = mesh(torsoGeo({ female, chubby }), topM); hips.add(torso);
   if (female) [-1, 1].forEach((s) => { const b = mesh(new THREE.SphereGeometry(.06, 12, 10), topM, { x: s * .055, y: .33, z: .085 }); b.scale.set(1, .9, .8); torso.add(b); });
+  if (curvy) [-1, 1].forEach((s) => { const b = mesh(new THREE.SphereGeometry(.088, 14, 12), botM, { x: s * .068, y: -.02, z: -.06 }); b.scale.set(1, .95, .9); hips.add(b); });
   let wr = null;
   if (wrapperMap) {
     // a wrapper tied at the waist, down to mid-calf
@@ -101,7 +103,7 @@ export function makeHuman(o) {
   // legs
   const legs = [-1, 1].map((s) => {
     const hp = new THREE.Group(); hp.position.set(s * .085, 0, 0); hips.add(hp);
-    const th = limb(.43, chubby ? .085 : .068, wrapperMap || bareLegs ? skinM : botM); hp.add(th);
+    const th = limb(.43, chubby ? .085 : curvy ? .076 : .068, wrapperMap || bareLegs ? skinM : botM); hp.add(th);
     const kn = new THREE.Group(); kn.position.y = -.43; th.add(kn);
     const shin = limb(.42, .05, wrapperMap || shorts || bareLegs ? skinM : botM); kn.add(shin);
     if (shorts) th.add(mesh(new THREE.CylinderGeometry(chubby ? .095 : .078, .072, .3, 12), botM, { y: -.15 }));

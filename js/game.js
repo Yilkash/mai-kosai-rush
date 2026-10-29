@@ -21,15 +21,21 @@ const FRY_SECONDS = 11;
 // Evenings: a target each, and what is new that night.
 const EVENINGS = [
   { target: 5000, news: null },
-  { target: 6500, news: 'Customers can pay by transfer now. Watch out for fake alerts!' },
-  { target: 8000, news: 'NEPA may take light tonight.' },
-  { target: 9500, news: 'The crowd is bigger. Expect “I came first!”' },
-  { target: 11000, news: 'Somebody may want V’s black sandal. Tap V in Stall view.' },
-  { target: 12500, news: 'Everything at once. Good luck!' },
+  { target: 6500, news: 'NEPA may take light tonight.' },
+  { target: 8000, news: 'The crowd is bigger. Expect “I came first!”' },
+  { target: 9500, news: 'Somebody may want V’s black sandal. Tap V in Stall view.' },
+  { target: 11000, news: 'Everything at once. Good luck!' },
+  { target: 12500, news: 'More fake alerts tonight. Check every one!' },
   { target: 14000, news: 'The busiest evening yet.' },
 ];
-// What each evening from the second adds, in order.
-const FEATURES = ['transfers', 'nepa', 'arguments', 'sandal'];
+// What each evening from the second adds, in order. Transfers (and fake alerts) are there from the first.
+const FEATURES = ['nepa', 'arguments', 'sandal'];
+const V_LINES = ['Lois, this crowd ehn!', 'Oluwasegun, snap me too!', 'Who wants fine sandal?', 'Racheal, the kosai smell sweet o!', 'Na wa for this heat!', 'Lois, give me one kosai na 😄', 'Hahaha!'];
+const V_VISITS = [
+  ['Lois, how far? Market dey move?', 'E dey move small small!', 'Okay, let me not disturb you.'],
+  ['See as you fine today!', 'Thank you jare!', 'I go siddon now.'],
+  ['Make I help you count money?', 'No o, I don see you!', 'Hahaha!'],
+];
 const ITEMS = ['kosai', 'awara', 'kunu'];
 /** "6 kosai, 2 awara, pepper" */
 export const orderText = (o) => [...ITEMS.filter((k) => o[k]).map((k) => `${o[k]} ${k}`), o.pepper ? 'pepper' : 'no pepper'].join(', ');
@@ -51,7 +57,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
       phase: 'start', min: START, paused: false,
       sales: 0, awaraCost: 0, mamaTotal: 0,
       stock: { kosai: 0, awara: 0, kunu: 25 },
-      pan: { t: 0 }, segIntro: false, paying: false,
+      pan: { t: 0 }, segIntro: false, paying: false, taughtFake: false, vChatIn: 25, vVisitIn: 90,
       selected: null, bag: { kosai: 0, awara: 0, kunu: 0, pepper: false },
       spawnIn: 6, rush: 0, rushCooldown: 0, vCooldown: 0,
       argueIn: 50, nepa: 0, nepaDone: 0,
@@ -174,7 +180,8 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
   function pay(c) {
     const o = c.order;
     const price = o.kosai * PRICE.kosai + o.awara * PRICE.awara + o.kunu * PRICE.kunu;
-    if (!has('transfers') || Math.random() < .58) {
+    const teachFake = evening === 1 && G.stats.served === 2 && !G.taughtFake;
+    if (guiding() || (!teachFake && Math.random() < (evening === 1 ? .7 : .58))) {
       const note = [500, 1000, 2000, 5000].find((n) => n >= price + (Math.random() < .3 ? 400 : 0)) || 5000;
       const change = note - price;
       if (change === 0) { ask(`<b>${c.name}</b> pays <b>${naira(note)}</b> cash. Exact money.`, [['Collect it', () => served(c, price), 'primary']]); return; }
@@ -188,13 +195,15 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
         }]));
       return;
     }
-    const fake = Math.random() < .28;
-    const trick = fake ? pick(['amount', 'pending', 'sender']) : null;
+    if (teachFake) G.taughtFake = true;
+    const fake = teachFake || Math.random() < (evening === 1 ? .2 : .28);
+    const trick = teachFake ? 'pending' : fake ? pick(['amount', 'pending', 'sender']) : null;
     const cut = [100, 150, 200].filter((d) => d < price);
     const shownAmount = trick === 'amount' ? (cut.length ? price - pick(cut) : price / 2) : price;
     const status = trick === 'pending' ? '<span class="bad">Pending</span>' : '<span class="good">Successful</span>';
     const from = trick === 'sender' ? 'Unknown Sender' : c.name.toUpperCase() + ' ' + pick(['A.', 'O.', 'I.', 'M.']);
-    ask(`<b>${c.name}</b> transferred for <b>${naira(price)}</b>. <span class="alert">Alert: <b>${naira(shownAmount)}</b> · ${from} · ${status}</span>`,
+    const tip = teachFake ? '<br><small>Look well: a real alert is the full amount, from their name, and says Successful.</small>' : '';
+    ask(`<b>${c.name}</b> transferred for <b>${naira(price)}</b>. <span class="alert">Alert: <b>${naira(shownAmount)}</b> · ${from} · ${status}</span>${tip}`,
       shuffle([
         ['Money don land', () => {
           if (fake) { G.stats.fakeMissed++; served(c, 0); setTimeout(() => say(cast.lois, 'Fake alert!', 2.5), 2500); }
@@ -304,7 +313,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
         <div><dt>Mama Yan Bui’s awara money</dt><dd>−${naira(G.awaraCost)}</dd></div>
         <div class="total"><dt>${hit ? 'Into the kiosk tin' : 'Kiosk tin (target missed)'}</dt><dd>${hit ? naira(profit) : '₦0'}</dd></div>
         <div><dt>Served / walked off</dt><dd>${s.served} / ${s.walkedOff}</dd></div>
-        ${has('transfers') ? `<div><dt>Fake alerts caught / missed</dt><dd>${s.fakeCaught} / ${s.fakeMissed}</dd></div>` : ''}
+        <div><dt>Fake alerts caught / missed</dt><dd>${s.fakeCaught} / ${s.fakeMissed}</dd></div>
         ${G.sandal.sold ? `<div><dt>V’s sandal sold for her</dt><dd>${naira(G.sandal.sold)}</dd></div>` : ''}
       </dl>
       <p>Kiosk tin: <b>${naira(tin)}</b> of ${naira(TIN_GOAL)}.${full ? ' <b>It’s full! The kiosk is coming!</b>' : ''}</p>`,
@@ -322,6 +331,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
         <li>Racheal fries the kosai. You help Lois sell.</li>
         <li><b>Tap a customer</b> (or their order) to serve them.</li>
         <li>Add what they asked for, then <b>Pack &amp; give</b> and take the money.</li>
+        <li>Some pay by transfer. <b>Watch for fake alerts!</b></li>
         <li>Need more customers? Tap <b>Oluwasegun</b> to post on the WhatsApp group.</li>
       </ol>` : ''}
       <p>Kiosk tin: ${naira(tin)} of ${naira(TIN_GOAL)}.</p>`,
@@ -422,6 +432,12 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
       G.segIntro = true;
       say(cast.seg, 'I’m Oluwasegun! Tap me to post on the WhatsApp group', 4.5);
     }
+
+    // V keeps the place lively
+    G.vChatIn -= dt;
+    if (G.vChatIn <= 0) { G.vChatIn = 30 + Math.random() * 30; say(cast.vee, pick(V_LINES), 2.4); }
+    G.vVisitIn -= dt;
+    if (G.vVisitIn <= 0) { G.vVisitIn = 100 + Math.random() * 60; cast.veeVisit(pick(V_VISITS)); }
 
     const progress = (G.min - START) / (CLOSE - START);
     const busier = has('arguments') ? 1.25 : 1;

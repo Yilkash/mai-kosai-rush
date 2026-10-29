@@ -13,6 +13,8 @@ export const SPOTS = {
   table: new THREE.Vector3(1.35, 0, 4.05),   // Lois's table, outside by the end post
   lois: new THREE.Vector3(1.35, 0, 3.45),
   bench: { x: 3.05, z0: .55, z1: 3.55 },     // from the wall by the gate out toward the road
+  gate: new THREE.Vector3(2.3, 0, .45),      // just in front of the black gate, left of the bench
+  tap: new THREE.Vector3(-2.6, 0, 5.4),      // the tap out front where Lois fetches water
 };
 
 export function buildWorld(scene, T) {
@@ -43,8 +45,6 @@ export function buildWorld(scene, T) {
   scene.add(mesh(box(11.6, .22, .08), M({ color: '#2f6fb8', roughness: .5 }), { x: -3.9, y: 2.95, z: .74 }));
   const windowMat = M({ color: '#ffcf73', emissive: '#ffb347', emissiveIntensity: 0 });
   scene.add(mesh(box(.9, .7, .05), windowMat, { x: .55, y: 2.1, z: .02 }));
-  // the door Racheal brings the pan out of
-  scene.add(mesh(box(.85, 1.95, .05), M({ color: '#3b2a20' }), { x: -1.2, y: .98, z: .02 }));
 
   // ---- boundary wall and the black gate on the right
   const wallMat = M({ map: T.block.clone() }); wallMat.map.repeat.set(2, 1); wallMat.map.needsUpdate = true;
@@ -207,5 +207,13 @@ export function buildWorld(scene, T) {
   const tappable = { basket, jar, flask, nylon };
   // how bright the fire is (0 = not lit yet), eased toward `target` in main.js
   const fire = { on: 1, target: 1 };
-  return { pan, fire, prof, windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai, panKosaiMat, basketKosai, sandal, nylon, tappable };
+
+  // the tap in front of the stall where Lois fills her bucket; `water` is the stream
+  const TAP = SPOTS.tap;
+  scene.add(mesh(new THREE.CylinderGeometry(.04, .04, .85, 8), M({ color: '#7d8a8f', metalness: .6, roughness: .4 }), { x: TAP.x, y: .42, z: TAP.z }));
+  scene.add(mesh(new THREE.CylinderGeometry(.02, .02, .16, 8), M({ color: '#7d8a8f', metalness: .6 }), { x: TAP.x, y: .8, z: TAP.z + .08, rx: Math.PI / 2 }));
+  scene.add(mesh(box(.5, .05, .5), M({ color: '#8f8a82', roughness: 1 }), { x: TAP.x, y: .025, z: TAP.z + .12, cast: false }));
+  const water = mesh(new THREE.CylinderGeometry(.012, .012, 1, 6), new THREE.MeshStandardMaterial({ color: '#bfe3ff', transparent: true, opacity: .75 }), { x: TAP.x, y: .55, z: TAP.z + .16, cast: false });
+  water.visible = false; scene.add(water);
+  return { pan, fire, prof, water, windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai, panKosaiMat, basketKosai, sandal, nylon, tappable };
 }
