@@ -18,7 +18,7 @@ How to play: each evening starts with Racheal and Lois walking up from the road 
 | `js/main.js` | Renderer, the two cameras (Table and Stall), taps, order bubbles, name tags and sound |
 | `js/world.js` | The stall, the zinc house, the street and everything in it |
 | `js/people.js` | How a person is built and posed |
-| `js/cast.js` | The regulars (Lois, Racheal, V, Oluwasegun, Baba Malam, Mama Yan Bui) and how they move |
+| `js/cast.js` | The regulars (Lois, Racheal, V, Oluwasegun, Mama Yan Bui, Mama Naomi, Baban Dany), the opening walk-in, and how they move |
 | `js/customers.js` | University students who walk in, crowd round the table and leave |
 | `js/game.js` | The evening as a game: pan, orders, payments, fake alerts, arguments, rush, NEPA, sandal, kiosk tin |
 | `js/sky.js` | The evening: sky, light and fog from 5:30 to 9:30pm |

@@ -30,7 +30,7 @@ export function buildCast(scene, world) {
   const lois = add({ skin: '#b9805a', top: '#d84a7a', bottom: '#2f4f7a', hair: 'bun', female: true, curvy: true, earrings: true, shoes: '#f4f2ec', h: 1.0 },
     { x: L.x, z: L.z, face: [1.6, 7] });
 
-  // the bench: Oluwasegun, V and Baba Malam, facing Lois
+  // the bench: Oluwasegun, V and a young man, facing Lois
   const seg = add({ skin: '#6d4129', top: '#3f7fbf', bottom: '#2b3340', hair: 'short', chubby: true, h: 1.02 },
     { x: B.x, z: 1.0, seat: .49, face: [L.x, L.z + .4] });
   const phone = mesh(box(.07, .13, .012), M({ color: '#111', roughness: .3 }), { y: -.06 });
