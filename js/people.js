@@ -28,6 +28,7 @@ export function makeHuman(o) {
   const {
     skin = '#7a4a2e', top = '#3f7fbf', bottom = '#2b3340', wrapperMap = null, hair = 'short',
     female = false, chubby = false, sleeves = 'short', h = 1, shoes = '#1d1a17',
+    shorts = false,   // shorts: cloth on the thighs only, bare shins
   } = o;
   const skinM = M({ color: skin, roughness: .6 });
   const lipM = M({ color: new THREE.Color(skin).multiplyScalar(.62), roughness: .5 });
@@ -85,7 +86,8 @@ export function makeHuman(o) {
     const hp = new THREE.Group(); hp.position.set(s * .085, 0, 0); hips.add(hp);
     const th = limb(.43, chubby ? .085 : .068, wrapperMap ? skinM : botM); hp.add(th);
     const kn = new THREE.Group(); kn.position.y = -.43; th.add(kn);
-    const shin = limb(.42, .05, wrapperMap ? skinM : botM); kn.add(shin);
+    const shin = limb(.42, .05, wrapperMap || shorts ? skinM : botM); kn.add(shin);
+    if (shorts) th.add(mesh(new THREE.CylinderGeometry(chubby ? .095 : .078, .072, .3, 12), botM, { y: -.15 }));
     shin.add(mesh(box(.095, .06, .23), M({ color: shoes, roughness: .5 }), { y: -.44, z: .05 }));
     return { hp, th, kn, shin };
   });

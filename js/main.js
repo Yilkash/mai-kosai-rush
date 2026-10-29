@@ -70,14 +70,16 @@ setTime(+timeInput.value);
 
 // ---- intro sweep
 let intro = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 0;
-document.getElementById('intro').addEventListener('click', () => { intro = 0; cast.restartWalk(); });
+document.getElementById('intro').addEventListener('click', () => { intro = 0; cast.restartWalk(); talking.splice(0).forEach((b) => b.el.remove()); });
 
 // ---- sound
 const sound = createSound();
 const soundBtn = document.getElementById('sound');
 function showSound() { soundBtn.textContent = sound.on ? 'Sound: on' : 'Sound: off'; soundBtn.setAttribute('aria-pressed', String(sound.on)); }
 soundBtn.addEventListener('click', async () => {
-  if (sound.on) { await sound.stop(); store.set('sound', 'off'); } else { await sound.start(); store.set('sound', 'on'); }
+  if (sound.on && !sound.loading) { await sound.stop(); store.set('sound', 'off'); showSound(); return; }
+  soundBtn.textContent = 'Sound: loading…';
+  await sound.start(); store.set('sound', 'on');
   showSound();
 });
 // Someone who had it on gets it back on their first tap anywhere, since a page may not start sound by itself.
@@ -87,6 +89,29 @@ if (store.get('sound') === 'on') window.addEventListener('pointerdown', async fu
   await sound.start(); showSound();
 });
 showSound();
+
+// ---- speech bubbles that follow a person on screen
+const bubbles = document.getElementById('bubbles');
+const talking = [];
+const above = new THREE.Vector3();
+function say(person, text, seconds = 7) {
+  const el = document.createElement('div');
+  el.className = 'say'; el.setAttribute('role', 'status'); el.textContent = text;
+  bubbles.appendChild(el);
+  talking.push({ person, el, until: clock.elapsedTime + seconds });
+}
+function placeBubbles() {
+  for (let i = talking.length - 1; i >= 0; i--) {
+    const b = talking[i];
+    if (clock.elapsedTime > b.until) { b.el.remove(); talking.splice(i, 1); continue; }
+    b.person.getWorldPosition(above); above.y += 1.95 * b.person.userData.h;
+    above.project(camera);
+    b.el.style.left = `${(above.x * .5 + .5) * innerWidth}px`;
+    b.el.style.top = `${(-above.y * .5 + .5) * innerHeight}px`;
+  }
+}
+// Mama Yan Bui tells Lois the total once the awara is on the table
+cast.events.onMamaArrives = (mama) => say(mama, 'Lois, here’s the awara. Total is ₦1,500.');
 
 // ---- full screen, and sideways where the phone allows it
 const fsBtn = document.getElementById('fullscreen');
@@ -120,6 +145,7 @@ function frame() {
     if (v >= 570) playing = false;
   }
   cast.update(t, dt);
+  placeBubbles();
   // fire, oil and smoke
   world.flames.forEach((f, i) => { const k = .7 + .5 * Math.abs(Math.sin(t * (7 + i) + i)); f.scale.set(1, k, 1); f.position.y = .18 + k * .08; f.material.opacity = .5 + .35 * k; });
   world.fireLight.intensity = 5 + Math.sin(t * 13) * .8 + Math.sin(t * 7.3) * .6;
