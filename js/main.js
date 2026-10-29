@@ -174,7 +174,7 @@ function placeNames(show) {
 cast.events.say = say;   // the cast's own lines, during the opening
 
 // ---- the game
-const game = createGame({ world, cast, customers, say, store, onClock: setTime, focus });
+const game = createGame({ world, cast, customers, say, store, onClock: setTime, focus, onPause: (paused) => pauseSound(paused) });
 document.getElementById('pause').addEventListener('click', () => game.pause());
 document.addEventListener('visibilitychange', () => { if (document.hidden) game.pause(); });
 
@@ -203,6 +203,11 @@ renderer.domElement.addEventListener('pointerup', (e) => {
 });
 
 // ---- sound
+// Pause stops the music too; Carry on brings it back if it was on.
+function pauseSound(paused) {
+  if (paused) sound.stop();
+  else if (store.get('sound') === 'on') sound.start();
+}
 const sound = createSound();
 const soundBtn = document.getElementById('sound');
 function showSound() { soundBtn.textContent = sound.on ? 'Sound: on' : 'Sound: off'; soundBtn.setAttribute('aria-pressed', String(sound.on)); }
@@ -246,6 +251,7 @@ function frame() {
   placeOrders();
   placeNames(viewName() === 'stall');
   // fire, oil and smoke keep going even when paused
+  world.speakerLed.material.emissiveIntensity = sound.on ? 1.5 + Math.sin(t * 13) * 1.2 : 0;
   // the fire takes a few seconds to catch once Racheal lights it
   const fire = world.fire; fire.on += (fire.target - fire.on) * Math.min(1, dt * .8);
   world.flames.forEach((f, i) => { const k = (.7 + .5 * Math.abs(Math.sin(t * (7 + i) + i))) * fire.on + .001; f.scale.set(fire.on + .001, k, fire.on + .001); f.position.y = .18 + k * .08; f.material.opacity = .5 + .35 * k; });

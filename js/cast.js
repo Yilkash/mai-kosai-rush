@@ -39,9 +39,14 @@ export function buildCast(scene, world) {
   seg.userData.arms[1].up.rotation.set(-2.3, 0, -.2); seg.userData.arms[1].el.rotation.x = -.6;
   const vee = add({ skin: '#8a5636', top: '#e6b02e', wrapperMap: ankara('#4b2f5a', '#e6b02e', '#ffffff'), hair: 'allback', female: true, earrings: true, h: .97 },
     { x: B.x, z: 2.0, seat: .49, face: [L.x, L.z] });
-  // a young man from the area, on the end of the bench
-  const baba = add({ skin: '#5a3a26', top: '#1d1d1f', bottom: '#4a6fa5', hair: 'short', h: 1.03 },
+  // Tricia (Patricia), their friend: comes during the evening, sits on the bench and eats her kosai
+  const tricia = add({ skin: '#7b4d31', top: '#f0ece2', bottom: '#2f4f7a', hair: 'braids', female: true, earrings: true, h: .98 },
     { x: B.x, z: 3.0, seat: .49, face: [L.x, L.z + .6] });
+  tricia.visible = false;
+  const plate = new THREE.Group();
+  plate.add(mesh(new THREE.CylinderGeometry(.11, .09, .015, 18), M({ color: '#f4f2ec', roughness: .3 })));
+  const plateKosai = [];
+  for (let i = 0; i < 6; i++) { const k = mesh(new THREE.SphereGeometry(.03, 10, 8), M({ color: '#c9862e', roughness: .7 }), { x: Math.cos(i * 1.05) * .05, y: .022, z: Math.sin(i * 1.05) * .05 }); plateKosai.push(k); plate.add(k); }
 
   // Mama Yan Bui brings the awara at the start of the evening
   const MAMA_FROM = new THREE.Vector3(-4.5, 0, 7), MAMA_STOP = new THREE.Vector3(.55, 0, 4.55), MAMA_HOME = new THREE.Vector3(-12, 0, 9);
@@ -50,7 +55,7 @@ export function buildCast(scene, world) {
   const awara = new THREE.Group();
   awara.add(mesh(box(.16, .1, .12), new THREE.MeshPhysicalMaterial({ color: '#fbf6e6', transparent: true, opacity: .85, roughness: .4 })));
   for (let i = 0; i < 6; i++) awara.add(mesh(box(.045, .04, .045), M({ color: '#f4ecd2' }), { x: -.05 + (i % 3) * .05, y: -.02, z: i < 3 ? -.025 : .025 }));
-  const AWARA_ON_TABLE = new THREE.Vector3(.95, .89, 3.95);
+  const AWARA_ON_TABLE = new THREE.Vector3(1.83, .89, 3.86);
   let mamaStage = 'away', mamaWait = 0;
   mama.visible = false;
 
@@ -76,6 +81,7 @@ export function buildCast(scene, world) {
   const fillBucket = (k) => { waterIn.visible = k > .02; waterIn.scale.set(1, .27 * k, 1); waterIn.position.y = .015 + .135 * k; };
   const panCarry = new THREE.Group();  // the frying pan, on its way out through the gate
   panCarry.add(mesh(new THREE.LatheGeometry(world.prof, 20), M({ color: '#1c1c1c', metalness: .6, roughness: .45, side: THREE.DoubleSide })));
+  panCarry.scale.setScalar(.6);   // the full-size pan looks like a tabletop in her hands
   const wood = new THREE.Group();      // Mama Naomi's bundle of firewood
   for (let i = 0; i < 7; i++) wood.add(mesh(new THREE.CylinderGeometry(.035, .045, 1.1, 6), M({ color: i % 2 ? '#5a3d26' : '#6b4a2e' }), { x: -.1 + (i % 4) * .065, y: .05 + Math.floor(i / 4) * .06, rz: Math.PI / 2, ry: (i - 3) * .05 }));
   const BASIN_AT = new THREE.Vector3(-1.75, 0, 1.25), BUCKET_AT = new THREE.Vector3(-1.45, 0, 2.05);
@@ -114,7 +120,33 @@ export function buildCast(scene, world) {
     u.arms.forEach((a) => { a.up.rotation.x = -.6 * k; a.el.rotation.x = -.3 * k; });
   };
 
-  let tracks = null, onOpened = null, woodHere = false;
+  let tracks = null, onOpened = null, woodHere = false, panOut = false;
+  // sitting down on the long bench, facing Lois
+  function seatOnBench(p, z) {
+    p.visible = true; p.position.set(B.x, 0, z); sit(p, .49); lapHands(p); faceTowards(p, L.x, L.z + (p === seg ? .4 : 0));
+    if (p === seg) { seg.userData.arms[1].up.rotation.set(-2.3, 0, -.2); seg.userData.arms[1].el.rotation.x = -.6; }   // phone up, snapping
+  }
+  const toBench = (p, z) => [
+    { walk: v(4.1, z + .9), speed: 1.1 },
+    { walk: v(B.x + .35, z), speed: .8 },
+    { do: () => seatOnBench(p, z) },
+  ];
+
+  let triciaTrack = null, triciaEating = 0;
+  /** Tricia walks in and sits; `seated` runs once she is down, for Lois to bring her kosai. */
+  function triciaComes(seated) {
+    if (triciaTrack || tricia.visible) return;
+    stand(tricia); tricia.position.set(6.4, 0, 9.6); tricia.visible = true;
+    triciaTrack = { p: tricia, i: 0, w: 0, steps: [...toBench(tricia, 3.0), { do: () => { triciaTrack = null; say(tricia, 'Lois, my kosai o!', 2.4); seated?.(); } }] };
+  }
+  /** Lois puts kosai on a plate for her. */
+  function serveTricia(n) {
+    loisAct = 'hand'; loisActT = 0;
+    tricia.userData.hips.add(plate); plate.position.set(0, .03, .24);
+    plateKosai.forEach((k, i) => { k.visible = i < n; });
+    triciaEating = n;
+  }
+
   function setOutAtHome() {
     // everyone off the stage, the stall bare and the fire out
     scene.remove(awara);
@@ -123,7 +155,11 @@ export function buildCast(scene, world) {
     tableThings.forEach((m) => { m.visible = false; });
     world.fire.on = world.fire.target = 0;
     world.water.visible = false;
-    woodHere = false;
+    woodHere = panOut = false;
+    // the bench is empty until Oluwasegun and V come; Tricia comes later in the evening
+    [[seg, 5.6, 9.4], [vee, 6.2, 9.8]].forEach(([p, x, z]) => { stand(p); p.position.set(x, 0, z); p.visible = true; });
+    tricia.visible = false; plate.parent?.remove(plate); triciaTrack = null; triciaEating = 0;
+    world.jerrycan.visible = false;
     stand(racheal); racheal.position.set(-1.6, 0, 9.2); racheal.visible = true;
     lois.position.set(-.8, 0, 9.6); lois.visible = true;
     naomi.position.set(-9.5, 0, 8.8); naomi.visible = true;
@@ -143,6 +179,7 @@ export function buildCast(scene, world) {
     tableThings.forEach((m) => { m.visible = true; });
     world.fire.target = 1; world.water.visible = false;
     racheal.visible = lois.visible = true; naomi.visible = dany.visible = false;
+    seatOnBench(seg, 1.0); seatOnBench(vee, 2.0);
     racheal.position.set(SPOTS.stool.x, 0, SPOTS.stool.z); sit(racheal, .43); faceTowards(racheal, SPOTS.fire.x, SPOTS.fire.z);
     lois.position.set(L.x, 0, L.z); faceTowards(lois, 1.6, 7);
     lois.userData.legs.forEach((l) => { l.hp.rotation.x = 0; l.kn.rotation.x = 0; });
@@ -161,7 +198,7 @@ export function buildCast(scene, world) {
         { walk: GATE },
         { do: () => { racheal.visible = false; } },      // in through the black gate
         { wait: 1.4 },
-        { do: () => { racheal.visible = true; carry(racheal, panCarry, 'hands'); } },
+        { do: () => { racheal.visible = true; carry(racheal, panCarry, 'hands'); panOut = true; } },
         { walk: v(.9, 1.0) },
         { walk: v(-2.25, 2.35) },
         { do: () => { panCarry.parent?.remove(panCarry); racheal.userData.carry = null; world.pan.forEach((m) => { m.visible = true; }); } },
@@ -204,8 +241,11 @@ export function buildCast(scene, world) {
         { walk: v(-10, 9), speed: 1.1 },
         { do: () => { naomi.visible = false; } },
       ] },
+      { p: seg, i: 0, w: 0, steps: [{ wait: 4 }, ...toBench(seg, 1.0)] },
+      { p: vee, i: 0, w: 0, steps: [{ wait: 7 }, ...toBench(vee, 2.0)] },
       { p: dany, i: 0, w: 0, steps: [
-        { wait: 6 },
+        { until: () => panOut },       // he comes out once Racheal is back with the pan, so she is there to answer
+        { wait: .8 },
         { do: () => { dany.visible = true; } },
         { walk: v(.4, 2.6), speed: .8 },
         { do: () => { faceTowards(dany, -1.5, 2.2); say(dany, 'Good evening o! Una don come?', 2.6); } },
@@ -256,8 +296,53 @@ export function buildCast(scene, world) {
       { do: () => { sit(vee, .49); faceTowards(vee, L.x, L.z); veeTrack = null; } },
     ] };
   }
-  const busy = (p) => tracks && tracks.some((tr) => tr.p === p && tr.i < tr.steps.length);
+  const busy = (p) => [tracks, closeTracks].some((list) => list && list.some((tr) => tr.p === p && tr.i < tr.steps.length));
 
+  // ---- closing time: Lois washes the things, Racheal pours the leftover oil
+  // back into the small white jerrycan, and the fire goes out
+  let closeTracks = null, onClosed = null;
+  const scrub = (p, t) => { const a = p.userData.arms; bend(p, .75); a[0].up.rotation.x = -.9 + Math.sin(t * 9) * .25; a[1].up.rotation.x = -.9 - Math.sin(t * 9) * .25; };
+  function closing(done) {
+    onClosed = done;
+    stand(racheal);
+    let clock = 0;
+    closeTracks = [
+      { p: lois, i: 0, w: 0, steps: [
+        { walk: v(.15, 4.1), speed: 1.2 },
+        { walk: v(-1.05, 2.35), speed: 1.2 },
+        { do: () => { faceTowards(lois, BUCKET_AT.x, BUCKET_AT.z); say(lois, 'Make I wash these things', 2.2); } },
+        { anim: 4.5, fn: () => { clock += 1 / 60; scrub(lois, clock * 6); } },
+        { anim: .5, fn: (k) => bend(lois, .75 * (1 - k)) },
+        { walk: v(.15, 4.1), speed: 1.2 },
+        { walk: v(L.x, L.z), speed: 1.2 },
+        { do: () => faceTowards(lois, 1.6, 7) },
+      ] },
+      { p: racheal, i: 0, w: 0, steps: [
+        { wait: .6 },
+        { do: () => { world.jerrycan.visible = true; world.fire.target = 0; } },
+        { walk: v(-2.25, 2.3), speed: .9 },
+        { do: () => { world.pan.forEach((m) => { m.visible = false; }); world.panKosai.forEach((k) => { k.visible = false; }); carry(racheal, panCarry, 'hands'); } },
+        { walk: v(-2.7, 2.75), speed: .7 },
+        { do: () => { faceTowards(racheal, world.jerrycan.position.x, world.jerrycan.position.z); say(racheal, 'Remaining oil, inside jerrycan', 2.2); } },
+        { anim: 3.0, fn: (k) => { bend(racheal, .5 * Math.min(1, k * 3)); panCarry.rotation.z = -1.2 * Math.min(1, k * 2); } },
+        { anim: .6, fn: (k) => { bend(racheal, .5 * (1 - k)); panCarry.rotation.z = -1.2 * (1 - k); } },
+        { walk: v(-2.25, 2.3), speed: .9 },
+        { do: () => { panCarry.parent?.remove(panCarry); racheal.userData.carry = null; world.pan.forEach((m) => { m.visible = true; }); } },
+        { wait: .8 },
+      ] },
+    ];
+  }
+  function closed() {
+    [lois, racheal].forEach((p) => { p.userData.carry = null; p.userData.hips.rotation.x = 0; p.userData.hips.position.y = .9; p.userData.legs.forEach((l) => { l.hp.rotation.x = 0; l.kn.rotation.x = 0; }); });
+    panCarry.parent?.remove(panCarry);
+    world.pan.forEach((m) => { m.visible = true; });
+    world.jerrycan.visible = true; world.fire.target = 0;
+    lois.position.set(L.x, 0, L.z); faceTowards(lois, 1.6, 7);
+    if (racheal.position.y === 0) racheal.position.set(-2.25, 0, 2.3);
+    closeTracks = null;
+    const done = onClosed; onClosed = null; done?.();
+  }
+  function skipClosing() { if (closeTracks) closed(); }
   const events = {};
   let flashEvery = 4.5;     // seconds between Oluwasegun's photos; shorter during a WhatsApp rush
   // What Lois is doing: bending to the kunu flask under the table, reaching
@@ -267,11 +352,12 @@ export function buildCast(scene, world) {
   let mamaMode = 'deliver';
 
   function update(t, dt) {
-    for (const p of [racheal, lois, seg, vee, baba, mama, naomi, dany]) {
+    for (const p of [racheal, lois, seg, vee, tricia, mama, naomi, dany]) {
       const u = p.userData;
       u.torso.rotation.z = Math.sin(t * 1.3 + u.phase) * .02;
     }
     runOpening(dt, t);
+    if (closeTracks) { closeTracks.forEach((tr) => step(tr, dt, t)); if (closeTracks.every((tr) => tr.i >= tr.steps.length)) closed(); }
     // Racheal stirs the pan once she is on her stool
     if (!busy(racheal)) {
       const ra = racheal.userData.arms[1];
@@ -325,14 +411,21 @@ export function buildCast(scene, world) {
     flash.intensity = (t % flashEvery) < .12 ? 6 : 0;
     // V: never still. She talks with her hands, looks from Lois to Oluwasegun, and laughs.
     if (veeTrack) step(veeTrack, dt, t);
-    if (!veeTrack || veeTrack.steps[veeTrack.i]?.wait != null) {
+    if (!busy(vee) && (!veeTrack || veeTrack.steps[veeTrack.i]?.wait != null)) {
       const vu = vee.userData, talk = Math.sin(t * 5.5) * Math.max(0, Math.sin(t * .7));
       vu.head.rotation.y = Math.sin(t * .45) * .55;
       vu.head.rotation.x = Math.max(0, Math.sin(t * .31) - .85) * -2.2;      // a laugh, head back
       vu.arms[0].up.rotation.set(-.55 + talk * .35, 0, .15); vu.arms[0].el.rotation.x = -1.1 + talk * .3;
       vu.arms[1].up.rotation.set(-.4 - talk * .25, 0, -.15); vu.arms[1].el.rotation.x = -.9;
     }
-    baba.userData.head.rotation.y = Math.sin(t * .4) * .3;
+    // Tricia: walking in, then eating her kosai one by one
+    if (triciaTrack) step(triciaTrack, dt, t);
+    else if (tricia.visible && triciaEating > 0) {
+      const tu = tricia.userData, cycle = (t % 4) / 4, k = Math.sin(Math.min(1, cycle / .35) * Math.PI);
+      tu.arms[1].up.rotation.set(-1.5 * k - .35, 0, .25 * k); tu.arms[1].el.rotation.x = -1.1 - 1.0 * k;
+      tu.head.rotation.x = -.1 * k;
+      if (cycle > .3 && cycle < .3 + dt / 4 + .001) { triciaEating--; plateKosai.forEach((m, i) => { m.visible = i < triciaEating; }); }
+    } else if (tricia.visible) tricia.userData.head.rotation.y = Math.sin(t * .6) * .4;
 
     // Mama Yan Bui: at opening she puts the awara down and goes; at closing she comes back for her money
     const mu = mama.userData;
@@ -354,7 +447,7 @@ export function buildCast(scene, world) {
   }
 
   return {
-    update, events, vee, seg, lois, mama, racheal, awara, baba, naomi, dany,
+    update, events, vee, seg, lois, mama, racheal, awara, tricia, naomi, dany, triciaComes, serveTricia, closing, skipClosing,
     /** The walk-in at the start of each evening; `done` runs once they're set up. */
     opening, veeVisit,
     skipOpening() { if (tracks) settled(); },

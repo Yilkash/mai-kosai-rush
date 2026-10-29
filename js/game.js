@@ -10,7 +10,7 @@
 // and fake alerts, NEPA, arguments, V's sandal. Oluwasegun can post on the
 // WhatsApp group for a rush from the first evening.
 
-const PRICE = { kosai: 50, awara: 50, kunu: 300 };
+const PRICE = { kosai: 50, puff: 50, awara: 50, kunu: 300 };   // puff-puff price is a guess until the user confirms
 const START = 330, CLOSE = 570;              // 5:30pm and 9:30pm on the game's clock
 const TIN_GOAL = 100000;
 const AWARA_TOTAL = { min: 3000, max: 7500 };  // what Mama Yan Bui charges, in whole ₦100s
@@ -36,16 +36,18 @@ const V_VISITS = [
   ['See as you fine today!', 'Thank you jare!', 'I go siddon now.'],
   ['Make I help you count money?', 'No o, I don see you!', 'Hahaha!'],
 ];
-const ITEMS = ['kosai', 'awara', 'kunu'];
-/** "6 kosai, 2 awara, pepper" */
-export const orderText = (o) => [...ITEMS.filter((k) => o[k]).map((k) => `${o[k]} ${k}`), o.pepper ? 'pepper' : 'no pepper'].join(', ');
+const ITEMS = ['kosai', 'puff', 'awara', 'kunu'];
+const NAME = { kosai: 'kosai', puff: 'puff-puff', awara: 'awara', kunu: 'kunu' };
+const empty = () => ({ kosai: 0, puff: 0, awara: 0, kunu: 0, pepper: false });
+/** "6 kosai, 4 puff-puff, pepper" */
+export const orderText = (o) => [...ITEMS.filter((k) => o[k]).map((k) => `${o[k]} ${NAME[k]}`), o.pepper ? 'pepper' : 'no pepper'].join(', ');
 
 const naira = (n) => `₦${Math.round(n).toLocaleString('en-NG')}`;
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((p) => p[1]);
 const $ = (id) => document.getElementById(id);
 
-export function createGame({ world, cast, customers, say, store, onClock, focus }) {
+export function createGame({ world, cast, customers, say, store, onClock, focus, onPause = () => {} }) {
   const G = {};
   let tin = Number(store.get('tin')) || 0;
   let evening = Math.max(1, Number(store.get('evening')) || 1);
@@ -56,9 +58,9 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
     Object.assign(G, {
       phase: 'start', min: START, paused: false,
       sales: 0, awaraCost: 0, mamaTotal: 0,
-      stock: { kosai: 0, awara: 0, kunu: 25 },
-      pan: { t: 0 }, segIntro: false, paying: false, taughtFake: false, vChatIn: 25, vVisitIn: 90,
-      selected: null, bag: { kosai: 0, awara: 0, kunu: 0, pepper: false },
+      stock: { kosai: 0, puff: 0, awara: 0, kunu: 25 },
+      pan: { t: 0 }, segIntro: false, paying: false, taughtFake: false, triciaCame: false, triciaAt: START + 45 + Math.random() * 60, vChatIn: 25, vVisitIn: 90,
+      selected: null, bag: empty(),
       spawnIn: 6, rush: 0, rushCooldown: 0, vCooldown: 0,
       argueIn: 50, nepa: 0, nepaDone: 0,
       sandal: { buyer: null, askAt: 380 + Math.random() * 130, sold: 0, asked: false },
@@ -82,10 +84,10 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
     renderAll();
   }
   function returnBag() {
-    G.stock.kosai += G.bag.kosai; G.stock.awara += G.bag.awara; G.stock.kunu += G.bag.kunu;
-    G.bag = { kosai: 0, awara: 0, kunu: 0, pepper: false };
+    ITEMS.forEach((k) => { G.stock[k] += G.bag[k]; });
+    G.bag = empty();
   }
-  const ITEM = { basket: 'kosai', awara: 'awara', flask: 'kunu' };
+  const ITEM = { basket: 'kosai', bowl: 'puff', awara: 'awara', flask: 'kunu' };
 
   /** A tap on something on Lois's table: 'basket', 'awara', 'flask', 'jar' or 'nylon'. */
   function tapTable(what) {
@@ -99,10 +101,10 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
     }
     const k = ITEM[what];
     if (!k) return;
-    if (G.bag[k] >= c.order[k]) { hint(c.order[k] ? `That’s all the ${k} ${c.name} wants` : `${c.name} didn’t ask for ${k}`); return; }
-    if (G.stock[k] <= 0) { hint(k === 'kosai' ? 'The basket is empty. Racheal is frying more…' : `No ${k} left`); return; }
+    if (G.bag[k] >= c.order[k]) { hint(c.order[k] ? `That’s all the ${NAME[k]} ${c.name} wants` : `${c.name} didn’t ask for ${NAME[k]}`); return; }
+    if (G.stock[k] <= 0) { hint(k === 'kosai' || k === 'puff' ? `No ${NAME[k]} left. Racheal is frying more…` : `No ${NAME[k]} left`); return; }
     G.stock[k]--; G.bag[k]++;
-    cast.loisDoes(k);
+    cast.loisDoes(k === 'puff' ? 'kosai' : k);
     renderAll();
   }
 
@@ -110,10 +112,10 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
     const c = G.selected;
     if (!c || c.state !== 'waiting') return;
     const o = c.order, b = G.bag;
-    const missing = ['kosai', 'awara', 'kunu'].filter((k) => b[k] !== o[k]).map((k) => `${o[k] - b[k]} more ${k}`);
+    const missing = ITEMS.filter((k) => b[k] !== o[k]).map((k) => `${o[k] - b[k]} more ${NAME[k]}`);
     if (b.pepper !== o.pepper) missing.push(o.pepper ? 'pepper' : 'no pepper');
     if (missing.length) { say(c.person, `I still need ${missing[0]}!`, 2.5); return; }
-    G.bag = { kosai: 0, awara: 0, kunu: 0, pepper: false };
+    G.bag = empty();
     G.paying = true;
     renderAll();
     pay(c);
@@ -130,7 +132,10 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
     world.panKosaiMat.color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255).convertSRGBToLinear();
     if (G.pan.t >= FRY_SECONDS) {
       G.pan.t = 0;
-      if (G.stock.kosai < 40) G.stock.kosai += BATCH;
+      // Racheal fries kosai, and every third batch puff-puff
+      G.batches = (G.batches || 0) + 1;
+      const k = G.batches % 3 === 0 && G.stock.puff < 24 ? 'puff' : 'kosai';
+      if (G.stock[k] < 40) G.stock[k] += k === 'puff' ? 8 : BATCH;
     }
   }
 
@@ -179,7 +184,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
 
   function pay(c) {
     const o = c.order;
-    const price = o.kosai * PRICE.kosai + o.awara * PRICE.awara + o.kunu * PRICE.kunu;
+    const price = ITEMS.reduce((n, k) => n + o[k] * PRICE[k], 0);
     const teachFake = evening === 1 && G.stats.served === 2 && !G.taughtFake;
     if (guiding() || (!teachFake && Math.random() < (evening === 1 ? .7 : .58))) {
       const note = [500, 1000, 2000, 5000].find((n) => n >= price + (Math.random() < .3 ? 400 : 0)) || 5000;
@@ -259,7 +264,9 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
 
   // ---------- the evening ----------
   function newOrder() {
-    const o = { kosai: pick([2, 2, 3, 4, 4, 6, 6, 8, 10]), awara: 0, kunu: 0, pepper: Math.random() < .6 };
+    const o = { ...empty(), kosai: pick([2, 2, 3, 4, 4, 6, 6, 8, 10]), pepper: Math.random() < .6 };
+    if (Math.random() < .3) o.puff = pick([2, 3, 4, 5]);
+    if (o.puff && Math.random() < .3) o.kosai = 0;   // some come for puff-puff alone
     if (Math.random() < .45) o.awara = pick([1, 2, 2, 3, 4]);
     if (Math.random() < .35) o.kunu = pick([1, 1, 2]);
     return o;
@@ -277,23 +284,32 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
   function opened() {
     $('skip').hidden = true;
     G.phase = 'open';
-    G.stock.kosai = BATCH;          // Racheal's first batch, fried while Lois went for water
+    G.stock.kosai = BATCH;          // Racheal's first batches, fried while Lois went for water
+    G.stock.puff = 8;
     focus('stall', 4);
     hint('');
     cast.mamaComes('deliver');
     renderAll();
   }
-  $('skip').addEventListener('click', () => cast.skipOpening());
+  $('skip').addEventListener('click', () => { cast.skipOpening(); cast.skipClosing(); });
 
   function closing() {
     G.phase = 'closing';
     customers.list.forEach((c) => { if (c.state === 'coming' || c.state === 'waiting') customers.leave(c); });
     G.selected = null; returnBag(); renderAll();
     focus('stall', 99);
-    if (G.mamaTotal) cast.mamaComes('collect'); else closeUp();
+    if (G.mamaTotal) cast.mamaComes('collect'); else tidyUp();
   }
 
+  /** Lois washes up and Racheal pours the leftover oil away before the night's results. */
+  function tidyUp() {
+    if (G.phase !== 'closing') return;
+    hint('Closing time: washing up…');
+    $('skip').hidden = false;
+    cast.closing(() => { $('skip').hidden = true; hint(''); closeUp(); });
+  }
   function closeUp() {
+    if (G.phase !== 'closing') return;
     G.phase = 'closed';
     G.awaraCost = G.mamaTotal || 0;
     cast.mamaLeaves();
@@ -328,7 +344,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
       <p>Tonight’s target: <b>${naira(t.target)}</b> before 9:30pm.</p>
       ${t.news ? `<p class="news">New tonight: ${t.news}</p>` : ''}
       ${evening === 1 ? `<ol class="how">
-        <li>Racheal fries the kosai. You help Lois sell.</li>
+        <li>Racheal fries kosai and puff-puff. You help Lois sell.</li>
         <li><b>Tap a customer</b> (or their order) to serve them.</li>
         <li>Add what they asked for, then <b>Pack &amp; give</b> and take the money.</li>
         <li>Some pay by transfer. <b>Watch for fake alerts!</b></li>
@@ -359,7 +375,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
     if (act === 'close') { returnBag(); G.selected = null; renderAll(); return; }
     if (act === 'pack') { pack(); return; }
     if (act === 'pepper') { tapTable('jar'); return; }
-    tapTable({ kosai: 'basket', awara: 'awara', kunu: 'flask' }[act]);
+    tapTable({ kosai: 'basket', puff: 'bowl', awara: 'awara', kunu: 'flask' }[act]);
   });
   function renderCard() {
     const c = G.selected;
@@ -367,11 +383,11 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
     const o = c.order, b = G.bag, step = guideStep();
     const ready = ITEMS.every((k) => b[k] === o[k]) && b.pepper === o.pepper;
     const btn = (act, label, done) => `<button type="button" data-act="${act}" class="${done ? 'got' : ''}${step === act ? ' pulse' : ''}">${label}</button>`;
-    const say = { kosai: 'Tap Kosai', awara: 'Tap Awara', kunu: 'Tap Kunu', pepper: 'Add pepper', pack: 'All done! Pack & give' }[step];
+    const say = { kosai: 'Tap Kosai', puff: 'Tap Puff-puff', awara: 'Tap Awara', kunu: 'Tap Kunu', pepper: 'Add pepper', pack: 'All done! Pack & give' }[step];
     const html = `<div class="stitle"><span><b>${c.name}</b> wants ${orderText(o)}</span><button type="button" data-act="close" class="x" aria-label="Stop serving ${c.name}">✕</button></div>
       ${say ? `<div class="sguide">${say}</div>` : ''}
       <div class="sbtns">
-        ${ITEMS.filter((k) => o[k]).map((k) => btn(k, `${k[0].toUpperCase() + k.slice(1)} ${b[k]}/${o[k]}`, b[k] === o[k])).join('')}
+        ${ITEMS.filter((k) => o[k]).map((k) => btn(k, `${NAME[k][0].toUpperCase() + NAME[k].slice(1)} ${b[k]}/${o[k]}`, b[k] === o[k])).join('')}
         ${o.pepper ? btn('pepper', b.pepper ? 'Pepper ✓' : 'Add pepper', b.pepper) : '<span class="chip">No pepper</span>'}
       </div>
       <button type="button" data-act="pack" class="packbtn primary${step === 'pack' ? ' pulse' : ''}" ${ready ? '' : 'disabled'}>Pack &amp; give ${c.name}</button>`;
@@ -383,7 +399,8 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
   function renderAll() {
     const shown = Math.min(world.basketKosai.length, G.stock.kosai);
     world.basketKosai.forEach((k, i) => { k.visible = i < shown; });
-    const filled = G.bag.kosai + G.bag.awara + G.bag.kunu;
+    const filled = ITEMS.reduce((n, k) => n + G.bag[k], 0);
+    world.bowlPuff.forEach((p, i) => { p.visible = i < G.stock.puff; });
     world.nylon.scale.set(1 + filled * .03, .35 + Math.min(1, filled / 8) * .6, 1 + filled * .03);
     $('money').textContent = `${naira(G.sales)} tonight`;
     const t = tonight().target;
@@ -419,7 +436,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
   cast.events.onMamaCollects = (mama) => {
     if (G.phase !== 'closing') return;
     say(mama, `My awara money: ${naira(G.mamaTotal)}`, 3);
-    setTimeout(closeUp, 2600);
+    setTimeout(() => { cast.mamaLeaves(); tidyUp(); }, 2600);
   };
 
   let tickUi = 0;
@@ -433,6 +450,17 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
       say(cast.seg, 'I’m Oluwasegun! Tap me to post on the WhatsApp group', 4.5);
     }
 
+    // Tricia comes by, sits on the bench, and Lois puts kosai on a plate for her
+    if (!G.triciaCame && G.min > G.triciaAt) {
+      G.triciaCame = true;
+      cast.triciaComes(() => {
+        const n = Math.min(5, G.stock.kosai);
+        G.stock.kosai -= n;
+        cast.serveTricia(n);
+        say(cast.lois, n ? 'Tricia, see your kosai!' : 'Wait small, Tricia!', 2.2);
+        renderAll();
+      });
+    }
     // V keeps the place lively
     G.vChatIn -= dt;
     if (G.vChatIn <= 0) { G.vChatIn = 30 + Math.random() * 30; say(cast.vee, pick(V_LINES), 2.4); }
@@ -446,7 +474,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
     G.spawnIn -= dt * (G.rush > 0 ? 2.2 : 1) * busier;
     if (guiding()) {
       // the first customer comes alone, and nobody else until they're served
-      if (!customers.list.length && G.min > START + 4) customers.arrive({ kosai: 4, awara: 0, kunu: 0, pepper: true }, G.min);
+      if (!customers.list.length && G.min > START + 4) customers.arrive({ ...empty(), kosai: 4, pepper: true }, G.min);
     } else if (G.spawnIn <= 0 && room && G.min < CLOSE - 8) {
       customers.arrive(newOrder(), G.min);
       G.spawnIn = (evening === 1 ? 12 : 9) - progress * 4.5 + Math.random() * 2.5;
@@ -483,6 +511,10 @@ export function createGame({ world, cast, customers, say, store, onClock, focus 
     get running() { return (G.phase === 'open' || G.phase === 'closing' || G.phase === 'setup') && !G.paused; },
     get min() { return G.min; },
     get phase() { return G.phase; },
-    pause() { if (G.phase !== 'open' || G.paused) return; open('<h2>Paused</h2>', [['Carry on', () => {}, 'primary']]); },
+    pause() {
+      if (G.phase !== 'open' || G.paused) return;
+      onPause(true);   // the music stops too
+      open('<h2>Paused</h2>', [['Carry on', () => onPause(false), 'primary']]);
+    },
   };
 }

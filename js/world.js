@@ -115,6 +115,13 @@ export function buildWorld(scene, T) {
   scene.add(mesh(new THREE.CylinderGeometry(.07, .07, .14, 16), M({ color: '#c8331f' }), { x: Tb.x + .3, y: .9, z: Tb.z - .05 }));
   scene.add(mesh(new THREE.CylinderGeometry(.008, .008, .26, 6), M({ color: '#bbb', metalness: .6 }), { x: Tb.x + .33, y: 1.0, z: Tb.z - .05, rz: -.3 }));
   scene.add(mesh(box(.18, .02, .14), M({ color: '#f4f2ec' }), { x: Tb.x + .05, y: .84, z: Tb.z + .18 }));
+  // a small bowl of puff-puff at the corner of the table
+  scene.add(mesh(new THREE.SphereGeometry(.13, 18, 8, 0, 6.3, Math.PI / 2, Math.PI / 2), M({ color: '#e9e4da', roughness: .4, side: THREE.DoubleSide }), { x: .9, y: .96, z: Tb.z - .2 }));
+  const bowl = mesh(new THREE.CylinderGeometry(.13, .13, .12, 16), M({ transparent: true, opacity: 0 }), { x: .9, y: .9, z: Tb.z - .2, cast: false });
+  scene.add(bowl);   // invisible: just something to tap
+  const puffMat = M({ color: '#b8742c', roughness: .75 });
+  const bowlPuff = [];
+  for (let i = 0; i < 12; i++) { const a = i * 2.4, r = i < 6 ? .07 : .03; const p = mesh(new THREE.SphereGeometry(.035, 10, 8), puffMat, { x: .9 + Math.cos(a) * r, y: .87 + (i < 6 ? 0 : .04), z: Tb.z - .2 + Math.sin(a) * r }); p.visible = false; bowlPuff.push(p); scene.add(p); }
   // the black nylon an order is packed into; it fills out as things go in
   const nylon = mesh(new THREE.SphereGeometry(.1, 16, 12), M({ color: '#141414', roughness: .35 }), { x: Tb.x + .3, y: .88, z: Tb.z + .17 });
   nylon.scale.set(1, .35, 1);
@@ -204,7 +211,18 @@ export function buildWorld(scene, T) {
   });
 
   // Things on and under Lois's table that a tap can land on.
-  const tappable = { basket, jar, flask, nylon };
+  const tappable = { basket, jar, flask, nylon, bowl };
+
+  // Racheal's small MP3 speaker on the ground beside her; it glows with the music
+  const speaker = new THREE.Group(); speaker.position.set(-3.55, 0, 1.15); speaker.rotation.y = .5; scene.add(speaker);
+  speaker.add(mesh(box(.16, .1, .07), M({ color: '#202226', roughness: .4 }), { y: .05 }));
+  speaker.add(mesh(new THREE.CircleGeometry(.032, 16), M({ color: '#55585e', roughness: .9 }), { y: .05, z: .036, cast: false }));
+  const speakerLed = mesh(box(.03, .012, .005), M({ color: '#3fd0ff', emissive: '#3fd0ff', emissiveIntensity: 0 }), { x: .05, y: .085, z: .036, cast: false });
+  speaker.add(speakerLed);
+  // the small white jerrycan the leftover oil goes back into at closing
+  const jerrycan = new THREE.Group(); jerrycan.position.set(-2.7, 0, 2.4); jerrycan.visible = false; scene.add(jerrycan);
+  jerrycan.add(mesh(box(.16, .22, .1), M({ color: '#f2f2ee', roughness: .5 }), { y: .11 }));
+  jerrycan.add(mesh(new THREE.CylinderGeometry(.02, .02, .04, 8), M({ color: '#f2b84b' }), { x: .04, y: .24 }));
   // how bright the fire is (0 = not lit yet), eased toward `target` in main.js
   const fire = { on: 1, target: 1 };
 
@@ -215,5 +233,5 @@ export function buildWorld(scene, T) {
   scene.add(mesh(box(.5, .05, .5), M({ color: '#8f8a82', roughness: 1 }), { x: TAP.x, y: .025, z: TAP.z + .12, cast: false }));
   const water = mesh(new THREE.CylinderGeometry(.012, .012, 1, 6), new THREE.MeshStandardMaterial({ color: '#bfe3ff', transparent: true, opacity: .75 }), { x: TAP.x, y: .55, z: TAP.z + .16, cast: false });
   water.visible = false; scene.add(water);
-  return { pan, fire, prof, water, windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai, panKosaiMat, basketKosai, sandal, nylon, tappable };
+  return { pan, fire, prof, water, bowlPuff, speaker, speakerLed, jerrycan, windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai, panKosaiMat, basketKosai, sandal, nylon, tappable };
 }
