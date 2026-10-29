@@ -79,8 +79,10 @@ export function buildWorld(scene, T) {
   scene.add(mesh(new THREE.CircleGeometry(.47, 24), M({ color: '#b07a18', roughness: .2, emissive: '#3a2000' }), { x: F.x, y: .49, z: F.z, rx: -Math.PI / 2, cast: false }));
   const kosaiMat = M({ color: '#c9862e', roughness: .7 });
   const kosaiGeo = new THREE.SphereGeometry(.045, 10, 8); kosaiGeo.scale(1, .8, 1);
+  // the kosai in the pan have their own material, so the game can colour them raw, golden or burnt
+  const panKosaiMat = M({ color: '#e8cf9a', roughness: .7 });
   const panKosai = [];
-  for (let i = 0; i < 9; i++) { const a = i / 9 * 6.28, r = rnd(.1, .33); const k = mesh(kosaiGeo, kosaiMat, { x: F.x + Math.cos(a) * r, y: .5, z: F.z + Math.sin(a) * r }); panKosai.push(k); scene.add(k); }
+  for (let i = 0; i < 9; i++) { const a = i / 9 * 6.28, r = rnd(.1, .33); const k = mesh(kosaiGeo, panKosaiMat, { x: F.x + Math.cos(a) * r, y: .5, z: F.z + Math.sin(a) * r }); panKosai.push(k); scene.add(k); }
   const flameMat = new THREE.MeshBasicMaterial({ color: '#ffb03a', transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false });
   const flames = [];
   for (let i = 0; i < 5; i++) { const f = new THREE.Mesh(new THREE.ConeGeometry(.08, .32, 6), flameMat.clone()); f.position.set(F.x + rnd(-.15, .15), .2, F.z + rnd(-.15, .15)); scene.add(f); flames.push(f); }
@@ -99,7 +101,9 @@ export function buildWorld(scene, T) {
   [[-.5, -.26], [.5, -.26], [-.5, .26], [.5, .26]].forEach(([dx, dz]) => scene.add(mesh(box(.06, .8, .06), wood, { x: Tb.x + dx, y: .4, z: Tb.z + dz })));
   scene.add(mesh(new THREE.CylinderGeometry(.27, .2, .2, 20, 1, true), M({ map: T.holes, side: THREE.DoubleSide, roughness: .6 }), { x: Tb.x - .2, y: .93, z: Tb.z }));
   scene.add(mesh(new THREE.CircleGeometry(.2, 20), M({ color: '#2f9a4a' }), { x: Tb.x - .2, y: .835, z: Tb.z, rx: -Math.PI / 2 }));
-  for (let i = 0; i < 16; i++) { const a = rnd(0, 6.28), r = rnd(0, .19); scene.add(mesh(kosaiGeo, kosaiMat, { x: Tb.x - .2 + Math.cos(a) * r, y: .9 + rnd(0, .08), z: Tb.z + Math.sin(a) * r })); }
+  // what is in the green basket: shown up to 24, as the stock rises and falls
+  const basketKosai = [];
+  for (let i = 0; i < 24; i++) { const a = rnd(0, 6.28), r = rnd(0, .19); const k = mesh(kosaiGeo, kosaiMat, { x: Tb.x - .2 + Math.cos(a) * r, y: .87 + (i / 24) * .1, z: Tb.z + Math.sin(a) * r }); k.visible = false; basketKosai.push(k); scene.add(k); }
   scene.add(mesh(new THREE.CylinderGeometry(.08, .08, .2, 16), new THREE.MeshPhysicalMaterial({ color: '#dff3f8', roughness: .1, transparent: true, opacity: .5 }), { x: Tb.x + .3, y: .93, z: Tb.z - .05 }));
   scene.add(mesh(new THREE.CylinderGeometry(.07, .07, .14, 16), M({ color: '#c8331f' }), { x: Tb.x + .3, y: .9, z: Tb.z - .05 }));
   scene.add(mesh(new THREE.CylinderGeometry(.008, .008, .26, 6), M({ color: '#bbb', metalness: .6 }), { x: Tb.x + .33, y: 1.0, z: Tb.z - .05, rz: -.3 }));
@@ -110,7 +114,8 @@ export function buildWorld(scene, T) {
   flask.add(mesh(new THREE.CylinderGeometry(.13, .15, .08, 16), M({ color: '#8e1f1b' }), { y: .56 }));
   flask.add(mesh(new THREE.TorusGeometry(.12, .02, 6, 16, Math.PI), M({ color: '#222' }), { y: .62, ry: Math.PI / 2 }));
   // V's black sandal by the end post
-  scene.add(mesh(box(.12, .03, .3), M({ color: '#141414', roughness: .5 }), { x: .75, y: .02, z: 3.55, ry: .4 }));
+  const sandal = mesh(box(.12, .03, .3), M({ color: '#141414', roughness: .5 }), { x: .75, y: .02, z: 3.55, ry: .4 });
+  scene.add(sandal);
 
   // ---- lantern at the end of the zinc house
   const lantern = new THREE.Group(); lantern.position.set(.2, 1.75, 3.05); scene.add(lantern);
@@ -188,5 +193,5 @@ export function buildWorld(scene, T) {
     const c = new THREE.IcosahedronGeometry(rnd(1.8, 2.4), 1); scene.add(mesh(c, crown, { x, y: 4, z }));
   });
 
-  return { windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai };
+  return { windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai, panKosaiMat, basketKosai, sandal };
 }

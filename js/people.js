@@ -179,3 +179,24 @@ export function lapHands(p) {
 export function faceTowards(p, x, z) {
   p.rotation.y = Math.atan2(x - p.position.x, z - p.position.z);
 }
+
+/**
+ * Walks a person one frame toward `target`, legs and arms swinging.
+ * Returns true once they are there, and leaves them standing.
+ */
+export function walkStep(p, target, dt, t, speed = .9) {
+  const u = p.userData;
+  const d = Math.hypot(target.x - p.position.x, target.z - p.position.z);
+  if (d < .04) {
+    u.legs.forEach((l) => { l.hp.rotation.x = 0; l.kn.rotation.x = 0; });
+    return true;
+  }
+  const dx = (target.x - p.position.x) / d, dz = (target.z - p.position.z) / d, step = Math.min(d, speed * dt);
+  p.position.x += dx * step; p.position.z += dz * step;
+  p.rotation.y = Math.atan2(dx, dz);
+  const w = Math.sin(t * 7 + u.phase);
+  u.legs[0].hp.rotation.x = w * .45; u.legs[1].hp.rotation.x = -w * .45;
+  u.legs[0].kn.rotation.x = Math.max(0, -w) * .5; u.legs[1].kn.rotation.x = Math.max(0, w) * .5;
+  u.arms[0].up.rotation.x = -w * .35; u.arms[1].up.rotation.x = w * .35;
+  return false;
+}

@@ -6,4 +6,4 @@
 - **Shared origin.** yilkash.github.io also serves Abide and the Mai Kosai order app, so localStorage keys start with `maiKosaiRush.` and the service worker is scoped to this folder. Never tell anyone to clear site data for yilkash.github.io.
 - **No copyrighted music.** The groove in `js/audio.js` is original. Do not add recordings of real songs. It is rendered once into a buffer and looped: scheduling notes on a timer hung on phones busy drawing the scene.
 - **Phones first.** Mid-range Android, often on small data plans: keep the first load small, pixel ratio capped at 1.5, one shadow-casting light.
-- Prices for the gameplay: kosai ₦50 each, awara ₦50, puff-puff ₦100, kunu ₦300 a cup.
+- **Gameplay (js/game.js).** Prices: kosai ₦50, awara ₦50, kunu ₦300 a cup (puff-puff is left out on purpose). Mama Yan Bui's awara costs ₦40 a piece to Lois. One game minute per real second. Modals pause the clock. The kiosk tin is saved as `maiKosaiRush.tin`.

@@ -1,9 +1,11 @@
-// Mai Kosai Rush: the stall at evening. Look test, before the gameplay.
+// Mai Kosai Rush: the stall, the camera, and the game loop.
 import * as THREE from 'three';
 import { makeTextures } from './textures.js';
 import { buildSky, clockText } from './sky.js';
 import { buildWorld } from './world.js';
 import { buildCast } from './cast.js';
+import { createCustomers } from './customers.js';
+import { createGame } from './game.js';
 import { createSound } from './audio.js';
 
 // Saved under this game's own name: yilkash.github.io is shared with Abide and
@@ -20,7 +22,6 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 app.appendChild(renderer.domElement);
 
@@ -29,11 +30,13 @@ const T = makeTextures();
 const sky = buildSky(scene);
 const world = buildWorld(scene, T);
 const cast = buildCast(scene);
+const customers = createCustomers(scene);
+const clock = new THREE.Clock();
 
 // ---- camera: sideways shows the whole stall; upright moves in on Lois and the crowd
 const camera = new THREE.PerspectiveCamera(40, 2, .1, 400);
 const VIEWS = {
-  wide: { pos: new THREE.Vector3(-0.6, 6.0, 13.6), look: new THREE.Vector3(-1.0, .8, 2.6), halfWidth: 8.4 },
+  wide: { pos: new THREE.Vector3(0.2, 5.6, 12.2), look: new THREE.Vector3(-0.4, .9, 3.0), halfWidth: 7.6 },
   tall: { pos: new THREE.Vector3(1.6, 4.6, 10.8), look: new THREE.Vector3(0.6, .95, 3.4), halfWidth: 3.4 },
 };
 let view = VIEWS.wide;
@@ -51,26 +54,57 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// ---- time of evening
-const timeInput = document.getElementById('time');
-const timeLabel = document.getElementById('timeLabel');
-function setTime(min) {
+// ---- the evening's light, driven by the game clock
+const clockEl = document.getElementById('clock');
+function setTime(min, nepa = false) {
   const dark = sky.setTime(min);
-  world.lanternLight.intensity = dark * 10;
-  world.lanternGlass.material.emissiveIntensity = dark * 2.2;
-  const lightsOn = THREE.MathUtils.smoothstep(min, 420, 470);
+  const flicker = nepa ? .7 + Math.random() * .3 : 1;   // the lantern flickers when NEPA takes light
+  const lantern = Math.max(dark, nepa ? 1 : 0);
+  world.lanternLight.intensity = lantern * 10 * flicker;
+  world.lanternGlass.material.emissiveIntensity = lantern * 2.2;
+  const lightsOn = nepa ? 0 : THREE.MathUtils.smoothstep(min, 420, 470);
   world.windowMat.emissiveIntensity = lightsOn * 1.2;
-  world.lit.forEach((m, i) => { m.emissiveIntensity = THREE.MathUtils.smoothstep(min, 425 + i * 6, 470 + i * 6) * 1.1; });
-  timeLabel.textContent = clockText(min);
+  world.lit.forEach((m, i) => { m.emissiveIntensity = nepa ? 0 : THREE.MathUtils.smoothstep(min, 425 + i * 6, 470 + i * 6) * 1.1; });
+  clockEl.textContent = clockText(min);
 }
-let playing = false;
-timeInput.addEventListener('input', () => { playing = false; setTime(+timeInput.value); });
-document.getElementById('play').addEventListener('click', () => { playing = true; timeInput.value = 330; });
-setTime(+timeInput.value);
+setTime(330);
 
-// ---- intro sweep
-let intro = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 0;
-document.getElementById('intro').addEventListener('click', () => { intro = 0; cast.restartWalk(); talking.splice(0).forEach((b) => b.el.remove()); });
+// ---- speech bubbles that follow a person on screen
+const bubbles = document.getElementById('bubbles');
+const talking = [];
+const above = new THREE.Vector3();
+function say(person, text, seconds = 4) {
+  // one bubble per person: a new line replaces the old
+  for (let i = talking.length - 1; i >= 0; i--) if (talking[i].person === person) { talking[i].el.remove(); talking.splice(i, 1); }
+  const el = document.createElement('div');
+  el.className = 'say'; el.setAttribute('role', 'status'); el.textContent = text;
+  bubbles.appendChild(el);
+  talking.push({ person, el, until: clock.elapsedTime + seconds });
+}
+function placeBubbles() {
+  for (let i = talking.length - 1; i >= 0; i--) {
+    const b = talking[i];
+    if (clock.elapsedTime > b.until || !b.person.parent) { b.el.remove(); talking.splice(i, 1); continue; }
+    b.person.getWorldPosition(above); above.y += 1.95 * (b.person.userData.h || 1);
+    above.project(camera);
+    b.el.style.left = `${Math.min(innerWidth - 90, Math.max(90, (above.x * .5 + .5) * innerWidth))}px`;
+    b.el.style.top = `${Math.max(60, (-above.y * .5 + .5) * innerHeight)}px`;
+  }
+}
+
+// ---- the game
+const game = createGame({ world, cast, customers, say, store, onClock: setTime });
+document.getElementById('pause').addEventListener('click', () => game.pause());
+document.addEventListener('visibilitychange', () => { if (document.hidden) game.pause(); });
+
+// tapping someone in the scene: V for her sandal, a customer to start their order
+const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
+renderer.domElement.addEventListener('pointerup', (e) => {
+  pointer.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(pointer, camera);
+  if (raycaster.intersectObject(cast.vee, true).length) { game.tapV(); return; }
+  for (const c of customers.waiting) if (raycaster.intersectObject(c.person, true).length) { game.select(c); return; }
+});
 
 // ---- sound
 const sound = createSound();
@@ -82,41 +116,13 @@ soundBtn.addEventListener('click', async () => {
   await sound.start(); store.set('sound', 'on');
   showSound();
 });
-// Someone who had it on gets it back on their first tap anywhere, since a page may not start sound by itself.
+// Someone who had it on gets it back on their first tap, since a page may not start sound by itself.
 if (store.get('sound') === 'on') window.addEventListener('pointerdown', async function once(e) {
   window.removeEventListener('pointerdown', once);
   if (e.target === soundBtn) return;
   await sound.start(); showSound();
 });
 showSound();
-
-// ---- speech bubbles that follow a person on screen
-const bubbles = document.getElementById('bubbles');
-const talking = [];
-const above = new THREE.Vector3();
-function say(person, text, seconds = 7) {
-  const el = document.createElement('div');
-  el.className = 'say'; el.setAttribute('role', 'status'); el.textContent = text;
-  bubbles.appendChild(el);
-  talking.push({ person, el, until: clock.elapsedTime + seconds });
-}
-function placeBubbles() {
-  for (let i = talking.length - 1; i >= 0; i--) {
-    const b = talking[i];
-    if (clock.elapsedTime > b.until) { b.el.remove(); talking.splice(i, 1); continue; }
-    b.person.getWorldPosition(above); above.y += 1.95 * b.person.userData.h;
-    above.project(camera);
-    b.el.style.left = `${(above.x * .5 + .5) * innerWidth}px`;
-    b.el.style.top = `${(-above.y * .5 + .5) * innerHeight}px`;
-  }
-}
-// Mama Yan Bui tells Lois the total once the awara is on the table
-// The total changes with every delivery, between these, in whole ₦100s.
-const AWARA_TOTAL = { min: 3000, max: 7500 };
-cast.events.onMamaArrives = (mama) => {
-  const total = Math.round((AWARA_TOTAL.min + Math.random() * (AWARA_TOTAL.max - AWARA_TOTAL.min)) / 100) * 100;
-  say(mama, `Lois, here’s the awara. Total is ₦${total.toLocaleString('en-NG')}.`);
-};
 
 // ---- full screen, and sideways where the phone allows it
 const fsBtn = document.getElementById('fullscreen');
@@ -136,22 +142,24 @@ if (store.get('tipClosed') !== '1') tip.hidden = false;
 document.getElementById('tipClose').addEventListener('click', () => { tip.hidden = true; store.set('tipClosed', '1'); });
 
 // ---- the loop
-const clock = new THREE.Clock();
+// ?speed=10 runs the evening faster, for testing; players never see it.
+const SPEED = Math.min(20, Math.max(1, Number(new URLSearchParams(location.search).get('speed')) || 1));
+let intro = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 0;
 function frame() {
   const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
   if (intro < 1) intro = Math.min(1, intro + dt / 3.2);
   const e = 1 - Math.pow(1 - intro, 3);
   camera.position.lerpVectors(START, view.pos, e);
-  camera.position.x += Math.sin(t * .15) * .15 * e;
+  camera.position.x += Math.sin(t * .15) * .12 * e;
   camera.lookAt(view.look);
-  if (playing) {
-    const v = Math.min(570, +timeInput.value + dt * 8);
-    timeInput.value = v; setTime(v);
-    if (v >= 570) playing = false;
-  }
-  cast.update(t, dt);
+
+  const gdt = dt * SPEED;
+  game.update(gdt);
+  const running = game.running;
+  cast.update(t, running ? gdt : 0);
+  customers.update(running ? gdt : 0, t, game.min);
   placeBubbles();
-  // fire, oil and smoke
+  // fire, oil and smoke keep going even when paused
   world.flames.forEach((f, i) => { const k = .7 + .5 * Math.abs(Math.sin(t * (7 + i) + i)); f.scale.set(1, k, 1); f.position.y = .18 + k * .08; f.material.opacity = .5 + .35 * k; });
   world.fireLight.intensity = 5 + Math.sin(t * 13) * .8 + Math.sin(t * 7.3) * .6;
   world.panKosai.forEach((k, i) => { k.position.y = .5 + Math.abs(Math.sin(t * 4 + i)) * .012; k.rotation.y += .01; });
@@ -165,6 +173,7 @@ function frame() {
 document.getElementById('loading').remove();
 requestAnimationFrame(frame);
 window.__ready = true;
+window.__game = game;   // handy when testing in a browser console
 
 // Works offline after the first visit.
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});

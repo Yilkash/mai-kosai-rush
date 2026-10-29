@@ -18,19 +18,38 @@
   <div id="bubbles" aria-live="polite"></div>
 
   <div class="top">
-    <div class="badge">Mai Kosai Rush<small>3D look test · not the game yet</small></div>
+    <div class="clockbox"><b id="clock">5:30 pm</b><small id="money">₦0 tonight</small></div>
+    <div class="tin"><small id="tinLabel">Kiosk tin</small><div class="tinbar"><i id="tinFill"></i></div></div>
     <div class="actions">
       <button id="sound" type="button" aria-pressed="false">Sound: off</button>
+      <button id="pause" type="button">Pause</button>
       <button id="fullscreen" type="button">Full screen</button>
     </div>
   </div>
 
-  <div class="bar">
-    <label for="time" id="timeLabel">7:00 pm</label>
-    <input id="time" type="range" min="330" max="570" step="1" value="420">
-    <button id="play" type="button">Play the evening</button>
-    <button id="intro" type="button">Intro</button>
+  <div id="orders" class="orders" aria-label="Orders"></div>
+
+  <div class="pan">
+    <div class="panlabel" id="panLabel">Pan is empty</div>
+    <div class="panbar"><i id="panFill"></i><span class="golden" title="Golden"></span></div>
+    <button id="panBtn" type="button">Add batter</button>
   </div>
+
+  <button id="segun" class="segun" type="button">Segun: post on WhatsApp</button>
+
+  <div class="tray">
+    <div class="trayinfo"><div id="packing" class="packing">Tap an order card to start packing</div><div id="stock" class="stock"></div></div>
+    <div class="traybtns">
+      <button type="button" data-add="kosai">Kosai +1</button>
+      <button type="button" data-add="awara">Awara +1</button>
+      <button type="button" data-add="kunu">Kunu +1</button>
+      <button type="button" id="pepper" aria-pressed="false">Pepper</button>
+      <button type="button" id="clearBag">Clear</button>
+      <button type="button" id="pack" class="primary">Pack in black nylon</button>
+    </div>
+  </div>
+
+  <div id="modal" class="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 
   <div class="tip" id="tip" hidden>
     <span>Best played with your phone sideways</span>

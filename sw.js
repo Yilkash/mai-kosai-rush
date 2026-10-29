@@ -1,10 +1,10 @@
 // Keeps the game playable offline after the first visit.
 // Scoped to /mai-kosai-rush/ only: the other apps on yilkash.github.io are not touched.
-const CACHE = 'mai-kosai-rush-v3';
+const CACHE = 'mai-kosai-rush-v4';
 const FILES = [
   './', './index.html', './css/style.css', './manifest.webmanifest',
   './js/main.js', './js/textures.js', './js/sky.js', './js/util.js', './js/world.js',
-  './js/people.js', './js/cast.js', './js/audio.js', './js/vendor/three.module.min.js',
+  './js/people.js', './js/cast.js', './js/customers.js', './js/game.js', './js/audio.js', './js/vendor/three.module.min.js',
   './icons/icon-192.png', './icons/icon-512.png',
 ];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES))); self.skipWaiting(); });
