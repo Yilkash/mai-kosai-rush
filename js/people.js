@@ -169,8 +169,19 @@ export function sit(p, seatY) {
   u.legs.forEach((l) => { l.hp.rotation.x = -Math.PI / 2; l.kn.rotation.x = Math.PI / 2; });
   if (u.wrapper) {
     // seated, the wrapper covers the lap: shorten the skirt and dress the thighs in it
+    u.thighMats ??= u.legs.map((l) => l.th.children[0].material);
     u.wrapper.scale.y = .25; u.wrapper.position.y = -.06;
     u.legs.forEach((l) => l.th.children[0].material = u.wrapperMat);
+  }
+}
+/** Back on their feet after sit(). */
+export function stand(p) {
+  const u = p.userData;
+  p.position.y = 0;
+  u.legs.forEach((l) => { l.hp.rotation.x = 0; l.kn.rotation.x = 0; });
+  if (u.wrapper && u.thighMats) {
+    u.wrapper.scale.y = 1; u.wrapper.position.y = -.28;
+    u.legs.forEach((l, i) => l.th.children[0].material = u.thighMats[i]);
   }
 }
 export function lapHands(p) {

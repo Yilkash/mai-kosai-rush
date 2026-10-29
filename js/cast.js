@@ -3,10 +3,10 @@
 import * as THREE from 'three';
 import { M, box, mesh } from './util.js';
 import { ankara } from './textures.js';
-import { makeHuman, sit, lapHands, faceTowards, walkStep } from './people.js';
+import { makeHuman, sit, stand, lapHands, faceTowards, walkStep } from './people.js';
 import { SPOTS } from './world.js';
 
-export function buildCast(scene) {
+export function buildCast(scene, world) {
   function add(opts, { x, z, seat = null, face = null }) {
     const p = makeHuman(opts);
     p.position.set(x, 0, z);
@@ -53,6 +53,123 @@ export function buildCast(scene) {
   let mamaStage = 'away', mamaWait = 0;
   mama.visible = false;
 
+  // ---- the opening. They don't live at the stall: they walk up from the road
+  // with loads on their heads. Lois sets her tray on the table; Racheal puts
+  // her basin down, goes into the house and brings the pan out, while Lois
+  // goes for water. Then Racheal sits and lights the fire.
+  const metal = M({ color: '#b9bcc0', metalness: .7, roughness: .35, side: THREE.DoubleSide });
+  const basin = new THREE.Group();     // Racheal's basin of batter
+  basin.add(mesh(new THREE.CylinderGeometry(.3, .18, .16, 20, 1, true), metal, { y: .08 }));
+  basin.add(mesh(new THREE.CircleGeometry(.29, 20), M({ color: '#e8d7a8', roughness: .8 }), { y: .13, rx: -Math.PI / 2, cast: false }));
+  const tray = new THREE.Group();      // Lois's tray, covered with a cloth
+  tray.add(mesh(new THREE.CylinderGeometry(.34, .3, .07, 20), M({ color: '#2f8a3a', roughness: .6 }), { y: .035 }));
+  tray.add(mesh(new THREE.SphereGeometry(.3, 16, 8, 0, 6.3, 0, 1.3), M({ map: ankara('#c62f2a', '#f2b84b', '#2e5a8a'), side: THREE.DoubleSide }), { y: .02 }));
+  tray.children[1].scale.y = .45;
+  const bucket = new THREE.Group();    // the water Lois fetches
+  bucket.add(mesh(new THREE.CylinderGeometry(.16, .12, .3, 16, 1, true), M({ color: '#3a7bd5', roughness: .5, side: THREE.DoubleSide }), { y: .15 }));
+  bucket.add(mesh(new THREE.CircleGeometry(.155, 16), M({ color: '#6fa8dc', roughness: .1 }), { y: .27, rx: -Math.PI / 2, cast: false }));
+  const panCarry = new THREE.Group();  // the frying pan, on its way out of the house
+  panCarry.add(mesh(new THREE.LatheGeometry(world.prof, 20), M({ color: '#1c1c1c', metalness: .6, roughness: .45, side: THREE.DoubleSide })));
+  const BASIN_AT = new THREE.Vector3(-1.75, 0, 1.25), BUCKET_AT = new THREE.Vector3(-1.45, 0, 2.05);
+  const DOOR = new THREE.Vector3(-1.2, 0, .45);
+  const tableThings = [world.tappable.basket, world.tappable.jar, world.tappable.nylon];
+  const v = (x, z) => new THREE.Vector3(x, 0, z);
+
+  function carry(p, thing, how) {
+    p.userData.carry = thing ? how : null;
+    if (!thing) return;
+    if (how === 'head') { p.userData.head.add(thing); thing.position.set(0, .14, 0); thing.rotation.set(0, 0, 0); }
+    else { p.userData.arms[1].hand.add(thing); thing.position.set(-.18, -.12, .12); thing.rotation.set(0, 0, 0); }
+  }
+  function putDown(p, thing, at, y = 0) {
+    scene.attach(thing); thing.position.set(at.x, y, at.z); thing.rotation.set(0, 0, 0);
+    p.userData.carry = null;
+  }
+  function carryPose(p) {
+    const a = p.userData.arms;
+    if (p.userData.carry === 'head') { a[1].up.rotation.set(-2.85, 0, -.2); a[1].el.rotation.x = -.45; }
+    if (p.userData.carry === 'hands') a.forEach((x) => { x.up.rotation.set(-.9, 0, 0); x.el.rotation.x = -.7; });
+  }
+
+  let tracks = null, onOpened = null;
+  function setOutAtHome() {
+    // everyone off the stage, the stall bare and the fire out
+    scene.remove(awara);
+    [basin, tray, bucket, panCarry].forEach((o) => o.parent?.remove(o));
+    world.pan.forEach((m) => { m.visible = false; });
+    tableThings.forEach((m) => { m.visible = false; });
+    world.fire.on = world.fire.target = 0;
+    stand(racheal); racheal.position.set(-1.6, 0, 9.2); racheal.visible = true;
+    lois.position.set(-.8, 0, 9.6); lois.visible = true;
+    racheal.userData.head.rotation.set(0, 0, 0); lois.userData.head.rotation.set(0, 0, 0);
+    carry(racheal, basin, 'head'); carry(lois, tray, 'head');
+  }
+  function settled() {
+    // where the opening ends; Skip jumps straight here
+    [basin, tray, bucket, panCarry].forEach((o) => o.parent?.remove(o));
+    racheal.userData.carry = lois.userData.carry = null;
+    scene.add(basin); basin.position.copy(BASIN_AT);
+    scene.add(bucket); bucket.position.copy(BUCKET_AT);
+    world.pan.forEach((m) => { m.visible = true; });
+    tableThings.forEach((m) => { m.visible = true; });
+    world.fire.target = 1;
+    racheal.visible = lois.visible = true;
+    racheal.position.set(SPOTS.stool.x, 0, SPOTS.stool.z); sit(racheal, .43); faceTowards(racheal, SPOTS.fire.x, SPOTS.fire.z);
+    lois.position.set(L.x, 0, L.z); faceTowards(lois, 1.6, 7);
+    lois.userData.legs.forEach((l) => { l.hp.rotation.x = 0; l.kn.rotation.x = 0; });
+    tracks = null;
+    const done = onOpened; onOpened = null; done?.();
+  }
+  function opening(done) {
+    onOpened = done;
+    setOutAtHome();
+    tracks = [
+      { p: racheal, i: 0, w: 0, steps: [
+        { walk: v(-1.9, 2.5) },
+        { do: () => putDown(racheal, basin, BASIN_AT) },
+        { wait: .3 },
+        { walk: DOOR },
+        { do: () => { racheal.visible = false; } },
+        { wait: 1.3 },
+        { do: () => { racheal.visible = true; carry(racheal, panCarry, 'hands'); } },
+        { walk: v(-2.25, 2.35) },
+        { do: () => { panCarry.parent?.remove(panCarry); racheal.userData.carry = null; world.pan.forEach((m) => { m.visible = true; }); } },
+        { walk: v(SPOTS.stool.x, SPOTS.stool.z + .05) },
+        { do: () => { sit(racheal, .43); faceTowards(racheal, SPOTS.fire.x, SPOTS.fire.z); world.fire.target = 1; } },
+      ] },
+      { p: lois, i: 0, w: 0, steps: [
+        { walk: v(.15, 4.1) },
+        { walk: v(.7, 3.45) },
+        { do: () => { tray.parent?.remove(tray); lois.userData.carry = null; tableThings.forEach((m) => { m.visible = true; }); } },
+        { wait: .5 },
+        { walk: v(-1.2, 4.3), speed: 1.7 },
+        { walk: v(-9.8, 6.2), speed: 1.9 },
+        { do: () => { lois.visible = false; } },
+        { wait: 1.2 },
+        { do: () => { lois.visible = true; carry(lois, bucket, 'head'); } },
+        { walk: v(-1.3, 2.7), speed: 1.7 },
+        { do: () => putDown(lois, bucket, BUCKET_AT) },
+        { walk: v(.15, 4.1), speed: 1.5 },
+        { walk: v(L.x, L.z), speed: 1.3 },
+        { do: () => faceTowards(lois, 1.6, 7) },
+        { wait: .6 },
+      ] },
+    ];
+  }
+  function runOpening(dt, t) {
+    if (!tracks) return;
+    for (const tr of tracks) {
+      const s = tr.steps[tr.i];
+      if (!s) continue;
+      if (s.walk) { if (walkStep(tr.p, s.walk, dt, t, s.speed || 1.3)) tr.i++; }
+      else if (s.wait != null) { tr.w += dt; if (tr.w >= s.wait) { tr.w = 0; tr.i++; } }
+      else { s.do(); tr.i++; }
+      carryPose(tr.p);
+    }
+    if (tracks.every((tr) => tr.i >= tr.steps.length)) settled();
+  }
+  const busy = (p) => tracks && tracks.some((tr) => tr.p === p && tr.i < tr.steps.length);
+
   const events = {};
   let flashEvery = 4.5;     // seconds between Oluwasegun's photos; shorter during a WhatsApp rush
   // What Lois is doing: bending to the kunu flask under the table, reaching
@@ -66,11 +183,15 @@ export function buildCast(scene) {
       const u = p.userData;
       u.torso.rotation.z = Math.sin(t * 1.3 + u.phase) * .02;
     }
-    // Racheal stirs the pan
-    const ra = racheal.userData.arms[1];
-    ra.up.rotation.set(-1.15 + Math.sin(t * 3) * .12, 0, -.25 + Math.cos(t * 3) * .12);
-    ra.el.rotation.x = -.5;
-    racheal.userData.head.rotation.set(.25, 0, 0);
+    runOpening(dt, t);
+    // Racheal stirs the pan once she is on her stool
+    if (!busy(racheal)) {
+      const ra = racheal.userData.arms[1];
+      ra.up.rotation.set(-1.15 + Math.sin(t * 3) * .12, 0, -.25 + Math.cos(t * 3) * .12);
+      ra.el.rotation.x = -.5;
+      racheal.userData.head.rotation.set(.25, 0, 0);
+    }
+    spoon.visible = !busy(racheal);
     // Lois
     const lu = lois.userData, la = lu.arms;
     const still = () => {
@@ -78,8 +199,8 @@ export function buildCast(scene) {
       lu.legs.forEach((l) => { l.hp.rotation.x = 0; l.kn.rotation.x = 0; });
       la.forEach((a) => { a.up.rotation.set(0, 0, 0); a.el.rotation.x = 0; });
     };
-    still();
-    if (loisAct) {
+    if (busy(lois)) { /* walking in, or off for water */ }
+    else if ((still(), loisAct)) {
       loisActT += dt; loisIdle = 0;
       const d = LOIS_ACTS[loisAct], k = Math.sin(Math.min(1, loisActT / d) * Math.PI);   // 0 → 1 → 0
       if (loisAct === 'kunu') {
@@ -139,7 +260,11 @@ export function buildCast(scene) {
   }
 
   return {
-    update, events, vee, seg, lois, mama, racheal, awara, get mamaHere() { return mamaStage === 'collecting'; },
+    update, events, vee, seg, lois, mama, racheal, awara, baba,
+    /** The walk-in at the start of each evening; `done` runs once they're set up. */
+    opening,
+    skipOpening() { if (tracks) settled(); },
+    get isOpening() { return !!tracks; }, get mamaHere() { return mamaStage === 'collecting'; },
     /** Mama Yan Bui comes: 'deliver' at opening, 'collect' at closing. */
     mamaComes(mode = 'deliver') {
       mamaMode = mode; mama.visible = true; mama.position.copy(MAMA_FROM); mamaStage = 'walking';

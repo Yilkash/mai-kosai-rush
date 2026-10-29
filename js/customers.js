@@ -8,7 +8,7 @@ import { SPOTS } from './world.js';
 
 // Places round the table, nearest first. Scattered, never a queue.
 const SPOTS_AROUND = [
-  [.1, 4.7], [1.1, 5.3], [2.2, 4.8], [.45, 5.75], [2.65, 5.65], [-.8, 5.35],
+  [1.1, 5.3], [.1, 4.7], [2.2, 4.8], [.45, 5.75], [2.65, 5.65], [-.8, 5.35],
   [1.7, 6.15], [.95, 6.6], [-.25, 6.3], [2.2, 6.75],
 ].map(([x, z]) => new THREE.Vector3(x, 0, z));
 const ENTRANCES = [new THREE.Vector3(-11, 0, 9.5), new THREE.Vector3(11, 0, 9.5), new THREE.Vector3(-6, 0, 12), new THREE.Vector3(6, 0, 12)];

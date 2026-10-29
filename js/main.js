@@ -24,13 +24,12 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 app.appendChild(renderer.domElement);
-renderer.setScissorTest(true);
 
 const scene = new THREE.Scene();
 const T = makeTextures();
 const sky = buildSky(scene);
 const world = buildWorld(scene, T);
-const cast = buildCast(scene);
+const cast = buildCast(scene, world);
 const customers = createCustomers(scene);
 const clock = new THREE.Clock();
 
@@ -45,7 +44,7 @@ const VIEWS = {
   },
   table: {
     wide: { pos: new THREE.Vector3(2.25, 2.3, 2.45), look: new THREE.Vector3(1.0, .75, 5.3), fov: 48 },
-    tall: { pos: new THREE.Vector3(2.05, 2.55, 2.55), look: new THREE.Vector3(1.15, .55, 5.3), fov: 62 },
+    tall: { pos: new THREE.Vector3(1.95, 3.0, 1.9), look: new THREE.Vector3(1.0, .7, 5.6), fov: 64 },
   },
 };
 let chosen = 'table';               // what the player picked with the button
@@ -79,11 +78,6 @@ function focus(name, seconds) {
   if (name === chosen) return;
   focusView = name; focusUntil = clock.elapsedTime + seconds;
 }
-
-// Racheal's pan, drawn into the box in the top-left corner
-const panCam = new THREE.PerspectiveCamera(45, 4 / 3, .05, 50);
-panCam.position.set(-2.3, 1.6, 3.0); panCam.lookAt(-2.4, .45, 1.6);
-const insetEl = document.getElementById('inset');
 
 // ---- the evening's light, driven by the game clock
 const clockEl = document.getElementById('clock');
@@ -131,50 +125,49 @@ function placeBubbles() {
 }
 
 
-// ---- order bubbles: pictures of what each waiting customer wants
+// ---- order bubbles: what each waiting customer wants, in words; tap one to serve them
 const labels = document.getElementById('labels');
 const orderEls = new Map();
 const head = new THREE.Vector3();
-function icons(order, bag) {
-  const part = (k, cls) => order[k] ? `<span class="ic ${cls}"></span>${bag ? `<span class="${bag[k] === order[k] ? 'done' : ''}">${bag[k]}/${order[k]}</span>` : `×${order[k]}`}` : '';
-  const pep = `<span class="ic ${order.pepper ? 'p' : 'np'}"></span>${bag && bag.pepper === order.pepper ? '<span class="done">✓</span>' : ''}`;
-  return part('kosai', 'k') + part('awara', 'a') + part('kunu', 'u') + pep;
-}
 function placeOrders() {
   const seen = new Set();
-  const list = game.running || game.phase === 'open' ? game.bubbles() : [];
+  const list = game.phase === 'open' ? game.bubbles() : [];
   for (const b of list) {
     seen.add(b.person);
     let el = orderEls.get(b.person);
-    if (!el) { el = document.createElement('div'); el.className = 'order'; labels.appendChild(el); orderEls.set(b.person, el); }
-    const html = `${b.selected ? `<span class="nm">${b.name}</span>` : ''}${icons(b.order, b.bag)}` +
+    if (!el) {
+      el = document.createElement('button'); el.type = 'button'; el.className = 'order';
+      el.addEventListener('click', () => game.select(el.customer));
+      labels.appendChild(el); orderEls.set(b.person, el);
+    }
+    el.customer = b.customer;
+    const html = `<span class="nm">${b.name}</span>${b.text}` +
       `<span class="pat"><i style="width:${Math.max(0, b.patience) * 100}%;background:${b.patience > .5 ? 'var(--green)' : b.patience > .25 ? 'var(--warn)' : 'var(--bad)'}"></i></span>`;
     if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
     el.classList.toggle('sel', b.selected);
+    el.classList.toggle('pulse', b.guide);
     b.person.getWorldPosition(head); head.y += 2.0 * (b.person.userData.h || 1);
     head.project(camera);
-    const off = head.z > 1;
-    el.style.display = off ? 'none' : '';
-    el.style.left = `${Math.min(innerWidth - 50, Math.max(50, (head.x * .5 + .5) * innerWidth))}px`;
-    el.style.top = `${Math.max(tall ? 104 : 64, (-head.y * .5 + .5) * innerHeight)}px`;
+    el.style.display = head.z > 1 ? 'none' : '';
+    el.style.left = `${Math.min(innerWidth - 70, Math.max(70, (head.x * .5 + .5) * innerWidth))}px`;
+    el.style.top = `${Math.max(tall ? 150 : 100, (-head.y * .5 + .5) * innerHeight)}px`;
   }
   for (const [p, el] of orderEls) if (!seen.has(p)) { el.remove(); orderEls.delete(p); }
 }
 
-// small labels on the table's things, on the first evening, in Table view
-const TAGS = [['basket', 'Kosai'], ['awara', 'Awara'], ['jar', 'Pepper'], ['flask', 'Kunu']];
-const tagEls = TAGS.map(([, text]) => { const el = document.createElement('div'); el.className = 'tag'; el.textContent = text; labels.appendChild(el); return el; });
+// name tags over the regulars, in Stall view, so people know who is who
+const REGULARS = [[cast.lois, 'Lois'], [cast.racheal, 'Racheal'], [cast.seg, 'Oluwasegun'], [cast.vee, 'V'], [cast.baba, 'Baba Malam'], [cast.mama, 'Mama Yan Bui']];
+const nameEls = REGULARS.map(([, text]) => { const el = document.createElement('div'); el.className = 'tag'; el.textContent = text; labels.appendChild(el); return el; });
 const tagPos = new THREE.Vector3();
-function placeTags(show) {
-  TAGS.forEach(([key], i) => {
-    const el = tagEls[i];
-    const obj = key === 'awara' ? cast.awara : world.tappable[key];
-    if (!show || !obj.parent || (key === 'awara' && obj.parent !== scene)) { el.style.display = 'none'; return; }
-    obj.getWorldPosition(tagPos); tagPos.y += key === 'flask' ? .2 : .08;
+function placeNames(show) {
+  REGULARS.forEach(([p], i) => {
+    const el = nameEls[i];
+    if (!show || !p.visible || orderEls.has(p)) { el.style.display = 'none'; return; }
+    p.getWorldPosition(tagPos); tagPos.y += 1.85 * (p.userData.h || 1) + (p.userData.carry === 'head' ? .25 : 0);
     tagPos.project(camera);
     el.style.display = '';
     el.style.left = `${(tagPos.x * .5 + .5) * innerWidth}px`;
-    el.style.top = `${(-tagPos.y * .5 + .5) * innerHeight + 6}px`;
+    el.style.top = `${(-tagPos.y * .5 + .5) * innerHeight - 14}px`;
   });
 }
 
@@ -186,7 +179,6 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) game.
 // taps in the scene: things on the table, a customer, V, Oluwasegun, the pan
 const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
 const hit = (obj) => obj && obj.parent && raycaster.intersectObject(obj, true).length > 0;
-insetEl.addEventListener('click', () => game.tapPan());
 document.getElementById('segun').addEventListener('click', () => game.post());
 renderer.domElement.addEventListener('pointerup', (e) => {
   pointer.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
@@ -197,7 +189,6 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     [cast.awara.parent === scene ? cast.awara : null, () => game.tapTable('awara')],
     [cast.vee, () => game.tapV()],
     [cast.seg, () => game.post()],
-    [world.panKosai[0]?.parent, () => game.tapPan()],
     ...customers.waiting.map((c) => [c.person, () => game.select(c)]),
   ];
   let best = null, bestD = Infinity;
@@ -251,27 +242,18 @@ function frame() {
   customers.update(running ? gdt : 0, t, game.min);
   placeBubbles();
   placeOrders();
-  placeTags(viewName() === 'table' && (Number(store.get('evening')) || 1) <= 1);
+  placeNames(viewName() === 'stall');
   // fire, oil and smoke keep going even when paused
-  world.flames.forEach((f, i) => { const k = .7 + .5 * Math.abs(Math.sin(t * (7 + i) + i)); f.scale.set(1, k, 1); f.position.y = .18 + k * .08; f.material.opacity = .5 + .35 * k; });
-  world.fireLight.intensity = 5 + Math.sin(t * 13) * .8 + Math.sin(t * 7.3) * .6;
+  // the fire takes a few seconds to catch once Racheal lights it
+  const fire = world.fire; fire.on += (fire.target - fire.on) * Math.min(1, dt * .8);
+  world.flames.forEach((f, i) => { const k = (.7 + .5 * Math.abs(Math.sin(t * (7 + i) + i))) * fire.on + .001; f.scale.set(fire.on + .001, k, fire.on + .001); f.position.y = .18 + k * .08; f.material.opacity = .5 + .35 * k; });
+  world.fireLight.intensity = (5 + Math.sin(t * 13) * .8 + Math.sin(t * 7.3) * .6) * fire.on;
   world.panKosai.forEach((k, i) => { k.position.y = .5 + Math.abs(Math.sin(t * 4 + i)) * .012; k.rotation.y += .01; });
   world.smoke.forEach((s) => {
     s.userData.t = (s.userData.t + dt * .25) % 1; const u = s.userData.t;
-    s.position.set(-2.25 + Math.sin(u * 6 + t) * .15, .6 + u * 1.6, 1.85); s.scale.setScalar(.3 + u * .9); s.material.opacity = .35 * (1 - u);
+    s.position.set(-2.25 + Math.sin(u * 6 + t) * .15, .6 + u * 1.6, 1.85); s.scale.setScalar(.3 + u * .9); s.material.opacity = .35 * (1 - u) * fire.on;
   });
-  const W = innerWidth, H = innerHeight;
-  renderer.setViewport(0, 0, W, H); renderer.setScissor(0, 0, W, H);
   renderer.render(scene, camera);
-  // Racheal's pan in its box (the box is a button laid over the canvas)
-  const r = insetEl.getBoundingClientRect();
-  if (r.width > 0) {
-    const b = 3;   // inside the border
-    const x = r.left + b, y = H - r.bottom + b, w = r.width - 2 * b, h = r.height - 2 * b;
-    renderer.setViewport(x, y, w, h); renderer.setScissor(x, y, w, h);
-    panCam.aspect = w / h; panCam.updateProjectionMatrix();
-    renderer.render(scene, panCam);
-  }
   requestAnimationFrame(frame);
 }
 document.getElementById('loading').remove();

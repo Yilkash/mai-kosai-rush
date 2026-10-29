@@ -4,7 +4,7 @@ A 3D browser game set at the Mai Kosai stall: Racheal fries kosai in the zinc ho
 
 Play: https://yilkash.github.io/mai-kosai-rush/
 
-How to play: you stand behind Lois's table. Tap Racheal's pan in the corner window to add batter, and again when the kosai glow golden. Tap a customer, then tap the green basket, the awara, the red flask under the table and the pepper jar to fill their black nylon, and tap the customer again to hand it over. Give the right change for cash and catch the fake transfer alerts. Tap **Stall view** to see the whole place (the game cuts there by itself when something happens). Each evening (5:30 to 9:30pm, about four minutes) has a sales target; hit it and the night's profit, less Mama Yan Bui's awara money, goes into the kiosk tin (₦100,000 goal) and the next evening opens with something new: transfers and fake alerts, NEPA, arguments, Oluwasegun's WhatsApp rush, V's sandal. Progress is saved on the phone.
+How to play: each evening starts with Racheal and Lois walking up from the road with loads on their heads. Racheal brings the pan out of the house, Lois fetches water, and the fire is lit (Skip if you've seen it). Mama Yan Bui drops the awara and tells Lois the price. Then you sell: tap a customer or their written order, add what they asked for on the card at the bottom, tap **Pack & give** and give the right change (on the first evening the first customer walks you through it). Racheal fries by herself and fills the basket. Tap Oluwasegun's green button to post on the WhatsApp group for a rush. **Stall view** shows the whole place with everyone's names; **Table view** is behind Lois's table. Each evening (5:30 to 9:30pm, about four minutes) has a sales target; hit it and the night's profit, less Mama Yan Bui's awara money, goes into the kiosk tin (₦100,000 goal) and the next evening adds something new: transfers and fake alerts, NEPA, arguments, V's sandal. Progress is saved on the phone.
 
 `?speed=10` on the address runs the evening faster, for testing.
 
@@ -15,7 +15,7 @@ How to play: you stand behind Lois's table. Tap Racheal's pan in the corner wind
 |---|---|
 | `index.html` | The page and its buttons |
 | `css/style.css` | Screen layout |
-| `js/main.js` | Renderer, the two cameras (Table and Stall), Racheal's pan window, taps, order bubbles and sound |
+| `js/main.js` | Renderer, the two cameras (Table and Stall), taps, order bubbles, name tags and sound |
 | `js/world.js` | The stall, the zinc house, the street and everything in it |
 | `js/people.js` | How a person is built and posed |
 | `js/cast.js` | The regulars (Lois, Racheal, V, Oluwasegun, Baba Malam, Mama Yan Bui) and how they move |

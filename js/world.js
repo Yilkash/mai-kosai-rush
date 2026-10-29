@@ -43,6 +43,8 @@ export function buildWorld(scene, T) {
   scene.add(mesh(box(11.6, .22, .08), M({ color: '#2f6fb8', roughness: .5 }), { x: -3.9, y: 2.95, z: .74 }));
   const windowMat = M({ color: '#ffcf73', emissive: '#ffb347', emissiveIntensity: 0 });
   scene.add(mesh(box(.9, .7, .05), windowMat, { x: .55, y: 2.1, z: .02 }));
+  // the door Racheal brings the pan out of
+  scene.add(mesh(box(.85, 1.95, .05), M({ color: '#3b2a20' }), { x: -1.2, y: .98, z: .02 }));
 
   // ---- boundary wall and the black gate on the right
   const wallMat = M({ map: T.block.clone() }); wallMat.map.repeat.set(2, 1); wallMat.map.needsUpdate = true;
@@ -75,8 +77,11 @@ export function buildWorld(scene, T) {
   const stone = M({ color: '#7a716a', flatShading: true });
   [0, 2.1, 4.2].forEach((a) => scene.add(mesh(new THREE.DodecahedronGeometry(.2, 0), stone, { x: F.x + Math.cos(a) * .3, y: .16, z: F.z + Math.sin(a) * .3, ry: a })));
   const prof = []; for (let i = 0; i <= 10; i++) { const t = i / 10; prof.push(new THREE.Vector2(.05 + .5 * Math.sin(t * Math.PI / 2), .02 + .17 * (1 - Math.cos(t * Math.PI / 2)))); }
-  scene.add(mesh(new THREE.LatheGeometry(prof, 24), M({ color: '#1c1c1c', metalness: .6, roughness: .45, side: THREE.DoubleSide }), { x: F.x, y: .33, z: F.z }));
-  scene.add(mesh(new THREE.CircleGeometry(.47, 24), M({ color: '#b07a18', roughness: .2, emissive: '#3a2000' }), { x: F.x, y: .49, z: F.z, rx: -Math.PI / 2, cast: false }));
+  const pan = [
+    mesh(new THREE.LatheGeometry(prof, 24), M({ color: '#1c1c1c', metalness: .6, roughness: .45, side: THREE.DoubleSide }), { x: F.x, y: .33, z: F.z }),
+    mesh(new THREE.CircleGeometry(.47, 24), M({ color: '#b07a18', roughness: .2, emissive: '#3a2000' }), { x: F.x, y: .49, z: F.z, rx: -Math.PI / 2, cast: false }),
+  ];
+  pan.forEach((m) => scene.add(m));
   const kosaiMat = M({ color: '#c9862e', roughness: .7 });
   const kosaiGeo = new THREE.SphereGeometry(.045, 10, 8); kosaiGeo.scale(1, .8, 1);
   // the kosai in the pan have their own material, so the game can colour them raw, golden or burnt
@@ -200,5 +205,7 @@ export function buildWorld(scene, T) {
 
   // Things on and under Lois's table that a tap can land on.
   const tappable = { basket, jar, flask, nylon };
-  return { windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai, panKosaiMat, basketKosai, sandal, nylon, tappable };
+  // how bright the fire is (0 = not lit yet), eased toward `target` in main.js
+  const fire = { on: 1, target: 1 };
+  return { pan, fire, prof, windowMat, lit, lanternGlass, lanternLight, fireLight, flames, smoke, panKosai, panKosaiMat, basketKosai, sandal, nylon, tappable };
 }
