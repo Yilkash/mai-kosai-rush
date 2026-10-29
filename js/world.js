@@ -214,7 +214,8 @@ export function buildWorld(scene, T) {
   const tappable = { basket, jar, flask, nylon, bowl };
 
   // Racheal's small MP3 speaker on the ground beside her; it glows with the music
-  const speaker = new THREE.Group(); speaker.position.set(-3.55, 0, 1.15); speaker.rotation.y = .5; scene.add(speaker);
+  scene.add(mesh(box(.4, .2, .2), blockMat, { x: -3.75, y: .1, z: 1.95, ry: .3 }));   // the block it stands on
+  const speaker = new THREE.Group(); speaker.position.set(-3.75, .2, 1.95); speaker.rotation.y = .7; speaker.scale.setScalar(2.4); scene.add(speaker);
   speaker.add(mesh(box(.16, .1, .07), M({ color: '#202226', roughness: .4 }), { y: .05 }));
   speaker.add(mesh(new THREE.CircleGeometry(.032, 16), M({ color: '#55585e', roughness: .9 }), { y: .05, z: .036, cast: false }));
   const speakerLed = mesh(box(.03, .012, .005), M({ color: '#3fd0ff', emissive: '#3fd0ff', emissiveIntensity: 0 }), { x: .05, y: .085, z: .036, cast: false });

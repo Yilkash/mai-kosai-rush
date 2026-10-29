@@ -143,6 +143,13 @@ function addHair(head, kind) {
       head.add(mesh(new THREE.CapsuleGeometry(.012, .34, 3, 5), bM, { x: Math.sin(a) * .1, y: -.13, z: Math.cos(a) * .1 - .02, rx: Math.cos(a) * .12, rz: -Math.sin(a) * .1 }));
     }
   }
+  if (kind === 'longbraids') {   // Lois: long plaited braids, past the shoulders
+    const bM = M({ color: '#1b1411', roughness: .9 }); cap(.109, bM);
+    for (let i = 0; i < 24; i++) {
+      const a = (-120 + i * (240 / 23)) * Math.PI / 180 + Math.PI;
+      head.add(mesh(new THREE.CapsuleGeometry(.01, .46, 3, 5), bM, { x: Math.sin(a) * .1, y: -.21, z: Math.cos(a) * .1 - .025, rx: Math.cos(a) * .1, rz: -Math.sin(a) * .08 }));
+    }
+  }
   if (kind === 'weave') {     // a long weave to the shoulders
     const wM = M({ color: '#241812', roughness: .6 }); cap(.112, wM);
     const back = mesh(new THREE.CylinderGeometry(.118, .14, .26, 20, 1, true, Math.PI * .28, Math.PI * 1.44), wM, { y: -.1 });
@@ -207,9 +214,12 @@ export function walkStep(p, target, dt, t, speed = .9) {
   const dx = (target.x - p.position.x) / d, dz = (target.z - p.position.z) / d, step = Math.min(d, speed * dt);
   p.position.x += dx * step; p.position.z += dz * step;
   p.rotation.y = Math.atan2(dx, dz);
-  const w = Math.sin(t * 7 + u.phase);
-  u.legs[0].hp.rotation.x = w * .45; u.legs[1].hp.rotation.x = -w * .45;
-  u.legs[0].kn.rotation.x = Math.max(0, -w) * .5; u.legs[1].kn.rotation.x = Math.max(0, w) * .5;
+  const w = Math.sin(t * (u.wrapper ? 9 : 7) + u.phase);
+  // a wrapper keeps the steps short, and swings a little with them
+  const stride = u.wrapper ? .16 : .45, knee = u.wrapper ? .25 : .5;
+  u.legs[0].hp.rotation.x = w * stride; u.legs[1].hp.rotation.x = -w * stride;
+  u.legs[0].kn.rotation.x = Math.max(0, -w) * knee; u.legs[1].kn.rotation.x = Math.max(0, w) * knee;
+  if (u.wrapper) u.wrapper.rotation.z = w * .05;
   u.arms[0].up.rotation.x = -w * .35; u.arms[1].up.rotation.x = w * .35;
   return false;
 }

@@ -27,7 +27,7 @@ export function buildCast(scene, world) {
 
   // Lois beside the end post, behind her table
   // Lois: a fitted top and jeans, earrings, her bun. No wrapper.
-  const lois = add({ skin: '#b9805a', top: '#d84a7a', bottom: '#2f4f7a', hair: 'bun', female: true, curvy: true, earrings: true, shoes: '#f4f2ec', h: 1.0 },
+  const lois = add({ skin: '#b9805a', top: '#d84a7a', bottom: '#2f4f7a', hair: 'longbraids', female: true, curvy: true, earrings: true, shoes: '#f4f2ec', h: 1.0 },
     { x: L.x, z: L.z, face: [1.6, 7] });
 
   // the bench: Oluwasegun, V and a young man, facing Lois
@@ -40,13 +40,15 @@ export function buildCast(scene, world) {
   const vee = add({ skin: '#8a5636', top: '#e6b02e', wrapperMap: ankara('#4b2f5a', '#e6b02e', '#ffffff'), hair: 'allback', female: true, earrings: true, h: .97 },
     { x: B.x, z: 2.0, seat: .49, face: [L.x, L.z] });
   // Tricia (Patricia), their friend: comes during the evening, sits on the bench and eats her kosai
-  const tricia = add({ skin: '#7b4d31', top: '#f0ece2', bottom: '#2f4f7a', hair: 'braids', female: true, earrings: true, h: .98 },
+  const tricia = add({ skin: '#7b4d31', top: '#f0ece2', bottom: '#2f4f7a', hair: 'braids', female: true, chubby: true, curvy: true, earrings: true, h: .98 },
     { x: B.x, z: 3.0, seat: .49, face: [L.x, L.z + .6] });
   tricia.visible = false;
   const plate = new THREE.Group();
-  plate.add(mesh(new THREE.CylinderGeometry(.11, .09, .015, 18), M({ color: '#f4f2ec', roughness: .3 })));
+  plate.add(mesh(new THREE.CylinderGeometry(.16, .12, .02, 20), M({ color: '#f4f2ec', roughness: .3 })));
   const plateKosai = [];
-  for (let i = 0; i < 6; i++) { const k = mesh(new THREE.SphereGeometry(.03, 10, 8), M({ color: '#c9862e', roughness: .7 }), { x: Math.cos(i * 1.05) * .05, y: .022, z: Math.sin(i * 1.05) * .05 }); plateKosai.push(k); plate.add(k); }
+  const bite = mesh(new THREE.SphereGeometry(.04, 10, 8), M({ color: '#c9862e', roughness: .7 }), { y: -.09, z: .02 });   // the kosai in her hand
+  bite.visible = false; tricia.userData.arms[1].hand.add(bite);
+  for (let i = 0; i < 6; i++) { const k = mesh(new THREE.SphereGeometry(.042, 10, 8), M({ color: '#c9862e', roughness: .7 }), { x: Math.cos(i * 1.05) * .08, y: .035, z: Math.sin(i * 1.05) * .08 }); plateKosai.push(k); plate.add(k); }
 
   // Mama Yan Bui brings the awara at the start of the evening
   const MAMA_FROM = new THREE.Vector3(-4.5, 0, 7), MAMA_STOP = new THREE.Vector3(.55, 0, 4.55), MAMA_HOME = new THREE.Vector3(-12, 0, 9);
@@ -85,7 +87,7 @@ export function buildCast(scene, world) {
   const wood = new THREE.Group();      // Mama Naomi's bundle of firewood
   for (let i = 0; i < 7; i++) wood.add(mesh(new THREE.CylinderGeometry(.035, .045, 1.1, 6), M({ color: i % 2 ? '#5a3d26' : '#6b4a2e' }), { x: -.1 + (i % 4) * .065, y: .05 + Math.floor(i / 4) * .06, rz: Math.PI / 2, ry: (i - 3) * .05 }));
   const BASIN_AT = new THREE.Vector3(-1.75, 0, 1.25), BUCKET_AT = new THREE.Vector3(-1.45, 0, 2.05);
-  const WOOD_AT = new THREE.Vector3(-3.55, 0, 2.35);
+  const WOOD_AT = new THREE.Vector3(-3.35, 0, 2.45);
   const GATE = SPOTS.gate, TAP = SPOTS.tap;
   const UNDER_TAP = new THREE.Vector3(TAP.x, 0, TAP.z + .16), AT_TAP = new THREE.Vector3(TAP.x + .45, 0, TAP.z + .35);
   const tableThings = [world.tappable.basket, world.tappable.jar, world.tappable.nylon];
@@ -150,7 +152,7 @@ export function buildCast(scene, world) {
   function setOutAtHome() {
     // everyone off the stage, the stall bare and the fire out
     scene.remove(awara);
-    [basin, tray, bucket, panCarry, wood].forEach((o) => o.parent?.remove(o));
+    [basin, tray, bucket, panCarry, wood, washBowl].forEach((o) => o.parent?.remove(o));
     world.pan.forEach((m) => { m.visible = false; });
     tableThings.forEach((m) => { m.visible = false; });
     world.fire.on = world.fire.target = 0;
@@ -162,7 +164,7 @@ export function buildCast(scene, world) {
     world.jerrycan.visible = false;
     stand(racheal); racheal.position.set(-1.6, 0, 9.2); racheal.visible = true;
     lois.position.set(-.8, 0, 9.6); lois.visible = true;
-    naomi.position.set(-9.5, 0, 8.8); naomi.visible = true;
+    naomi.position.set(-2.2, 0, 10.5); naomi.visible = true;
     dany.position.copy(GATE); dany.visible = false;
     racheal.userData.head.rotation.set(0, 0, 0); lois.userData.head.rotation.set(0, 0, 0);
     carry(racheal, basin, 'head'); carry(lois, tray, 'head'); carry(naomi, wood, 'head');
@@ -234,11 +236,12 @@ export function buildCast(scene, world) {
       ] },
       { p: naomi, i: 0, w: 0, steps: [
         { wait: 2.5 },
-        { walk: v(-3.4, 3.4), speed: 1.1 },
-        { walk: v(-3.5, 2.75), speed: .9 },
+        { walk: v(-2.9, 4.2), speed: 1.0 },
+        { walk: v(-3.3, 2.95), speed: .9 },
         { do: () => { putDown(naomi, wood, WOOD_AT); wood.rotation.set(0, .4, 0); woodHere = true; say(naomi, 'Racheal, your firewood!', 2.4); } },
         { wait: 2.2 },
-        { walk: v(-10, 9), speed: 1.1 },
+        { walk: v(-2.6, 4.4), speed: 1.0 },
+        { walk: v(-2.2, 11), speed: 1.1 },
         { do: () => { naomi.visible = false; } },
       ] },
       { p: seg, i: 0, w: 0, steps: [{ wait: 4 }, ...toBench(seg, 1.0)] },
@@ -301,25 +304,28 @@ export function buildCast(scene, world) {
   // ---- closing time: Lois washes the things, Racheal pours the leftover oil
   // back into the small white jerrycan, and the fire goes out
   let closeTracks = null, onClosed = null;
+  const washBowl = new THREE.Group();   // the basin Lois washes the things in, at the front by her table
+  washBowl.add(mesh(new THREE.CylinderGeometry(.3, .2, .16, 20, 1, true), metal, { y: .08 }));
+  washBowl.add(mesh(new THREE.CircleGeometry(.28, 20), M({ color: '#9cc7e8', roughness: .1, transparent: true, opacity: .8 }), { y: .12, rx: -Math.PI / 2, cast: false }));
   const scrub = (p, t) => { const a = p.userData.arms; bend(p, .75); a[0].up.rotation.x = -.9 + Math.sin(t * 9) * .25; a[1].up.rotation.x = -.9 - Math.sin(t * 9) * .25; };
   function closing(done) {
     onClosed = done;
-    stand(racheal);
     let clock = 0;
     closeTracks = [
       { p: lois, i: 0, w: 0, steps: [
-        { walk: v(.15, 4.1), speed: 1.2 },
-        { walk: v(-1.05, 2.35), speed: 1.2 },
-        { do: () => { faceTowards(lois, BUCKET_AT.x, BUCKET_AT.z); say(lois, 'Make I wash these things', 2.2); } },
+        { walk: v(.5, 3.7), speed: 1.0 },
+        { walk: v(.35, 4.6), speed: 1.0 },
+        { do: () => { scene.add(washBowl); washBowl.position.set(.35, 0, 5.05); faceTowards(lois, .35, 5.05); say(lois, 'Make I wash these things', 2.2); } },
         { anim: 4.5, fn: () => { clock += 1 / 60; scrub(lois, clock * 6); } },
         { anim: .5, fn: (k) => bend(lois, .75 * (1 - k)) },
-        { walk: v(.15, 4.1), speed: 1.2 },
-        { walk: v(L.x, L.z), speed: 1.2 },
+        { walk: v(.5, 3.7), speed: 1.0 },
+        { walk: v(L.x, L.z), speed: 1.0 },
         { do: () => faceTowards(lois, 1.6, 7) },
       ] },
       { p: racheal, i: 0, w: 0, steps: [
-        { wait: .6 },
-        { do: () => { world.jerrycan.visible = true; world.fire.target = 0; } },
+        { do: () => { world.fire.target = 0; say(racheal, 'Make I rest small…', 2.2); } },
+        { wait: 4.5 },                                     // she sits a little first
+        { do: () => { stand(racheal); world.jerrycan.visible = true; } },
         { walk: v(-2.25, 2.3), speed: .9 },
         { do: () => { world.pan.forEach((m) => { m.visible = false; }); world.panKosai.forEach((k) => { k.visible = false; }); carry(racheal, panCarry, 'hands'); } },
         { walk: v(-2.7, 2.75), speed: .7 },
@@ -339,6 +345,7 @@ export function buildCast(scene, world) {
     world.jerrycan.visible = true; world.fire.target = 0;
     lois.position.set(L.x, 0, L.z); faceTowards(lois, 1.6, 7);
     if (racheal.position.y === 0) racheal.position.set(-2.25, 0, 2.3);
+    washBowl.parent?.remove(washBowl);
     closeTracks = null;
     const done = onClosed; onClosed = null; done?.();
   }
@@ -423,9 +430,10 @@ export function buildCast(scene, world) {
     else if (tricia.visible && triciaEating > 0) {
       const tu = tricia.userData, cycle = (t % 4) / 4, k = Math.sin(Math.min(1, cycle / .35) * Math.PI);
       tu.arms[1].up.rotation.set(-1.5 * k - .35, 0, .25 * k); tu.arms[1].el.rotation.x = -1.1 - 1.0 * k;
-      tu.head.rotation.x = -.1 * k;
+      tu.head.rotation.x = -.1 * k; tu.head.rotation.y = 0;
+      bite.visible = k > .05;
       if (cycle > .3 && cycle < .3 + dt / 4 + .001) { triciaEating--; plateKosai.forEach((m, i) => { m.visible = i < triciaEating; }); }
-    } else if (tricia.visible) tricia.userData.head.rotation.y = Math.sin(t * .6) * .4;
+    } else if (tricia.visible) { tricia.userData.head.rotation.y = Math.sin(t * .6) * .4; bite.visible = false; }
 
     // Mama Yan Bui: at opening she puts the awara down and goes; at closing she comes back for her money
     const mu = mama.userData;

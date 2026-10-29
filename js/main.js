@@ -40,7 +40,7 @@ const camera = new THREE.PerspectiveCamera(50, 2, .05, 400);
 const VIEWS = {
   stall: {
     wide: { pos: new THREE.Vector3(0.2, 5.6, 12.2), look: new THREE.Vector3(-0.4, .9, 3.0), halfWidth: 7.6 },
-    tall: { pos: new THREE.Vector3(1.6, 4.6, 10.8), look: new THREE.Vector3(0.6, .95, 3.4), halfWidth: 3.4 },
+    tall: { pos: new THREE.Vector3(-0.2, 6.2, 14.6), look: new THREE.Vector3(-0.25, .8, 2.4), halfWidth: 4.0 },
   },
   table: {
     wide: { pos: new THREE.Vector3(2.25, 2.3, 2.45), look: new THREE.Vector3(1.0, .75, 5.3), fov: 48 },
@@ -58,7 +58,7 @@ function target() {
   const v = VIEWS[viewName()][tall ? 'tall' : 'wide'];
   if (v.fov) return { ...v, fovNow: v.fov };
   const dist = v.pos.distanceTo(v.look);
-  return { ...v, fovNow: THREE.MathUtils.clamp(2 * Math.atan(v.halfWidth / dist / camera.aspect) * 180 / Math.PI, 28, 66) };
+  return { ...v, fovNow: THREE.MathUtils.clamp(2 * Math.atan(v.halfWidth / dist / camera.aspect) * 180 / Math.PI, 28, 72) };
 }
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
@@ -156,7 +156,7 @@ function placeOrders() {
 }
 
 // name tags over the regulars, in Stall view, so people know who is who
-const REGULARS = [[cast.lois, 'Lois'], [cast.racheal, 'Racheal'], [cast.seg, 'Oluwasegun'], [cast.vee, 'V'], [cast.mama, 'Mama Yan Bui'], [cast.naomi, 'Mama Naomi'], [cast.dany, 'Baban Dany']];
+const REGULARS = [[cast.lois, 'Lois'], [cast.racheal, 'Racheal'], [cast.seg, 'Oluwasegun'], [cast.vee, 'V'], [cast.tricia, 'Tricia'], [cast.mama, 'Mama Yan Bui'], [cast.naomi, 'Mama Naomi'], [cast.dany, 'Baban Dany']];
 const nameEls = REGULARS.map(([, text]) => { const el = document.createElement('div'); el.className = 'tag'; el.textContent = text; labels.appendChild(el); return el; });
 const tagPos = new THREE.Vector3();
 function placeNames(show) {
@@ -203,6 +203,20 @@ renderer.domElement.addEventListener('pointerup', (e) => {
 });
 
 // ---- sound
+// a ♪ floats up from the speaker by Racheal while the music plays
+const notePos = new THREE.Vector3();
+let nextNote = 0;
+function floatNote() {
+  world.speaker.getWorldPosition(notePos); notePos.y += .2;
+  notePos.project(camera);
+  if (notePos.z > 1) return;
+  const el = document.createElement('div');
+  el.className = 'note'; el.textContent = Math.random() < .5 ? '♪' : '♫';
+  el.style.left = `${(notePos.x * .5 + .5) * innerWidth}px`;
+  el.style.top = `${(-notePos.y * .5 + .5) * innerHeight}px`;
+  labels.appendChild(el);
+  setTimeout(() => el.remove(), 1900);
+}
 // Pause stops the music too; Carry on brings it back if it was on.
 function pauseSound(paused) {
   if (paused) sound.stop();
@@ -252,6 +266,7 @@ function frame() {
   placeNames(viewName() === 'stall');
   // fire, oil and smoke keep going even when paused
   world.speakerLed.material.emissiveIntensity = sound.on ? 1.5 + Math.sin(t * 13) * 1.2 : 0;
+  if (sound.on && viewName() === 'stall' && t > nextNote) { nextNote = t + .9; floatNote(); }
   // the fire takes a few seconds to catch once Racheal lights it
   const fire = world.fire; fire.on += (fire.target - fire.on) * Math.min(1, dt * .8);
   world.flames.forEach((f, i) => { const k = (.7 + .5 * Math.abs(Math.sin(t * (7 + i) + i))) * fire.on + .001; f.scale.set(fire.on + .001, k, fire.on + .001); f.position.y = .18 + k * .08; f.material.opacity = .5 + .35 * k; });
@@ -267,7 +282,7 @@ function frame() {
 document.getElementById('loading').remove();
 requestAnimationFrame(frame);
 window.__ready = true;
-window.__game = game; window.__customers = customers;   // handy when testing in a browser console
+window.__game = game; window.__customers = customers; window.__cast = cast;   // handy when testing in a browser console
 
 // Works offline after the first visit.
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});

@@ -337,6 +337,17 @@ export function createGame({ world, cast, customers, say, store, onClock, focus,
     renderAll();
   }
 
+  // Start again: back to evening 1 with an empty kiosk tin, after a "sure?"
+  function confirmRestart() {
+    open(`<h2>Start again?</h2><p>This takes you back to evening 1 and empties the kiosk tin (${naira(tin)}).</p>`,
+      [['Yes, start again', () => {
+        cast.skipOpening(); cast.skipClosing(); cast.mamaLeaves();
+        tin = 0; evening = 1; store.set('tin', '0'); store.set('evening', '1');
+        onPause(false);
+        welcome();
+      }], ['No, go back', () => { if (G.phase === 'open') onPause(false); else welcome(); }, 'primary']]);
+  }
+
   function welcome() {
     reset(); renderAll();
     const t = tonight();
@@ -351,7 +362,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus,
         <li>Need more customers? Tap <b>Oluwasegun</b> to post on the WhatsApp group.</li>
       </ol>` : ''}
       <p>Kiosk tin: ${naira(tin)} of ${naira(TIN_GOAL)}.</p>`,
-      [['Open the stall', start, 'primary']]);
+      [['Open the stall', start, 'primary']].concat(evening > 1 || tin > 0 ? [['Start again from evening 1', confirmRestart, 'small']] : []));
   }
 
   // ---------- the first customer, step by step ----------
@@ -387,7 +398,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus,
     const html = `<div class="stitle"><span><b>${c.name}</b> wants ${orderText(o)}</span><button type="button" data-act="close" class="x" aria-label="Stop serving ${c.name}">✕</button></div>
       ${say ? `<div class="sguide">${say}</div>` : ''}
       <div class="sbtns">
-        ${ITEMS.filter((k) => o[k]).map((k) => btn(k, `${NAME[k][0].toUpperCase() + NAME[k].slice(1)} ${b[k]}/${o[k]}`, b[k] === o[k])).join('')}
+        ${ITEMS.filter((k) => o[k]).map((k) => btn(k, `${NAME[k][0].toUpperCase() + NAME[k].slice(1)}<span class="cnt">${b[k]}/${o[k]}</span>`, b[k] === o[k])).join('')}
         ${o.pepper ? btn('pepper', b.pepper ? 'Pepper ✓' : 'Add pepper', b.pepper) : '<span class="chip">No pepper</span>'}
       </div>
       <button type="button" data-act="pack" class="packbtn primary${step === 'pack' ? ' pulse' : ''}" ${ready ? '' : 'disabled'}>Pack &amp; give ${c.name}</button>`;
@@ -453,6 +464,9 @@ export function createGame({ world, cast, customers, say, store, onClock, focus,
     // Tricia comes by, sits on the bench, and Lois puts kosai on a plate for her
     if (!G.triciaCame && G.min > G.triciaAt) {
       G.triciaCame = true;
+      focus('stall', 9);
+      hint('Tricia is here! Lois will give her kosai');
+      setTimeout(() => hint(''), 6000);
       cast.triciaComes(() => {
         const n = Math.min(5, G.stock.kosai);
         G.stock.kosai -= n;
@@ -514,7 +528,7 @@ export function createGame({ world, cast, customers, say, store, onClock, focus,
     pause() {
       if (G.phase !== 'open' || G.paused) return;
       onPause(true);   // the music stops too
-      open('<h2>Paused</h2>', [['Carry on', () => onPause(false), 'primary']]);
+      open('<h2>Paused</h2>', [['Carry on', () => onPause(false), 'primary'], ['Start again from evening 1', confirmRestart, 'small']]);
     },
   };
 }

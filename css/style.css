@@ -9,14 +9,21 @@
   --warn: #e0a03a;
   --bad: #d9573a;
   --muted: #cdbfae;
-  --cream: #fff7ea;
+  --cream: #fffaf2;
+  /* the Mai Kosai order app's colours, so the game and the app feel like one */
+  --brand: #5a230c;
+  --brand-ink: #ffffff;
+  --gold: #e3a520;
+  --line-2: #e7d5b8;
+  --ok: #17804b;
+  --ok-soft: #e4f3ea;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
   margin: 0; background: #120e0b; color: var(--ink);
-  font-family: Outfit, system-ui, sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent;
 }
 #app { position: fixed; inset: 0; }
 canvas { display: block; width: 100%; height: 100%; touch-action: none; }
@@ -25,7 +32,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
 button {
   border: 0; border-radius: 10px; background: var(--button); color: var(--ink);
-  font: 600 12px Outfit, system-ui, sans-serif; padding: 7px 10px; cursor: pointer; white-space: nowrap; min-height: 34px;
+  font: 600 12px "Plus Jakarta Sans", system-ui, sans-serif; padding: 7px 10px; cursor: pointer; white-space: nowrap; min-height: 34px;
 }
 button:disabled { opacity: .45; cursor: default; }
 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -40,7 +47,7 @@ button.primary { background: var(--accent); color: var(--ink-dark); font-weight:
 }
 .top > * { pointer-events: auto; }
 .clockbox { background: var(--panel); border-radius: 10px; padding: 3px 10px; line-height: 1.05; }
-.clockbox b { font-family: "Baloo 2", Outfit, sans-serif; font-size: 18px; }
+.clockbox b { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 18px; }
 .clockbox small { display: block; font-size: 11px; color: var(--accent); font-weight: 700; }
 .target { background: var(--panel); border-radius: 10px; padding: 4px 10px; min-width: 0; flex: 0 1 240px; }
 .target small { font-size: 10.5px; color: var(--muted); white-space: nowrap; font-weight: 600; }
@@ -69,7 +76,7 @@ button.primary { background: var(--accent); color: var(--ink-dark); font-weight:
 .order {
   position: absolute; transform: translate(-50%, -100%); background: var(--cream); color: var(--ink-dark);
   border-radius: 12px; padding: 4px 8px 8px; min-height: 0; pointer-events: auto;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, .4); font: 700 11.5px Outfit, system-ui, sans-serif; white-space: nowrap; line-height: 1.25;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .4); font: 700 11.5px "Plus Jakarta Sans", system-ui, sans-serif; white-space: nowrap; line-height: 1.25;
 }
 .order::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--cream); border-bottom: 0; }
 .order.sel { outline: 3px solid var(--accent); z-index: 2; }
@@ -123,13 +130,14 @@ body:has(.serve:not([hidden])) .hint { display: none; }
 .modal { position: fixed; inset: 0; background: rgba(10, 7, 5, .55); display: flex; align-items: center; justify-content: center; padding: 12px; z-index: 20; }
 .modal[hidden] { display: none; }
 .sheet { background: var(--cream); color: var(--ink-dark); border-radius: 16px; padding: 14px 16px; width: min(440px, 100%); max-height: calc(100% - 8px); overflow-y: auto; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); }
-.sheet h2 { font-family: "Baloo 2", Outfit, sans-serif; margin: 0 0 4px; font-size: 21px; line-height: 1.15; text-wrap: balance; }
+.sheet h2 { font-family: "Plus Jakarta Sans", system-ui, sans-serif; margin: 0 0 4px; font-size: 21px; line-height: 1.15; text-wrap: balance; }
 .sheet p { margin: 4px 0; font-size: 14px; line-height: 1.4; }
 .sheet .news { background: #fff1cf; border-radius: 8px; padding: 6px 9px; font-weight: 600; }
 .sheet .stars { font-size: 26px; color: #d08a1a; margin: 0; letter-spacing: 2px; }
 .choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .choices button { flex: 1 1 120px; background: #efe1c9; color: var(--ink-dark); font-size: 13px; min-height: 40px; }
 .choices button.primary { background: var(--accent); }
+.choices button.small { flex: 1 1 100%; order: 2; background: transparent; color: #7a5a3c; font-size: 12px; font-weight: 600; min-height: 30px; text-decoration: underline; }
 .how { margin: 6px 0; padding-left: 20px; font-size: 13px; line-height: 1.4; }
 .how li { margin-bottom: 3px; }
 .good { color: #2f7d4f; } .bad { color: #c0392b; }
@@ -144,10 +152,10 @@ body:has(.serve:not([hidden])) .hint { display: none; }
   border-radius: 12px; padding: 5px 9px; font-size: 12px; font-weight: 700; line-height: 1.3; box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
 }
 .say::after { content: ""; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); border: 7px solid transparent; border-top-color: var(--cream); border-bottom: 0; }
-.say.coin { background: none; box-shadow: none; padding: 0; color: #7dde6b; font-family: "Baloo 2", Outfit, sans-serif; font-size: 17px; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+.say.coin { background: none; box-shadow: none; padding: 0; color: #7dde6b; font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 17px; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
 .say.coin::after { display: none; }
 
-.loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-family: "Baloo 2", Outfit, sans-serif; font-size: 22px; background: #120e0b; z-index: 30; }
+.loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 22px; background: #120e0b; z-index: 30; }
 
 /* upright phones: the target bar goes under the clock */
 body.tall .top { flex-wrap: wrap; }
@@ -158,3 +166,34 @@ body.tall .segun { top: calc(96px + env(safe-area-inset-top, 0px)); }
 body:not(.tall) .serve { left: max(8px, env(safe-area-inset-left, 0px)); transform: none; width: min(330px, 45vw); padding: 6px 8px 8px; gap: 5px; }
 body:not(.tall) .sbtns button, body:not(.tall) .sbtns .chip { flex-basis: 64px; min-height: 34px; font-size: 12px; }
 body:not(.tall) .segun { top: auto; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+
+/* music notes floating up from Racheal's speaker while the sound is on */
+.note { position: absolute; transform: translate(-50%, -100%); color: #8fe3ff; font-size: 18px; font-weight: 800; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); animation: note 1.8s ease-out forwards; }
+@keyframes note { from { opacity: 0; margin-top: 0; } 15% { opacity: 1; } to { opacity: 0; margin-top: -60px; margin-left: 14px; } }
+@media (prefers-reduced-motion: reduce) { .note { display: none; } }
+
+/* ---- buttons like the Mai Kosai order app: rounded, a dark-brown main button, white ones with a thin line */
+button { border-radius: 12px; font-weight: 600; letter-spacing: -.005em; }
+.actions button, .segun, .skip { border-radius: 999px; padding: 8px 14px; font-size: 12.5px; min-height: 36px; }
+.choices button, .dchoices button, .sbtns button {
+  background: #fff; color: var(--ink-dark); border: 1px solid var(--line-2); border-radius: 12px;
+  font-size: 14px; font-weight: 600; min-height: 46px;
+}
+.choices button.primary, .dchoices button.primary, .packbtn, button.primary {
+  background: var(--brand); color: var(--brand-ink); border: 0;
+  box-shadow: 0 8px 20px rgba(90, 35, 12, .3);
+}
+.choices button.small { box-shadow: none; border: 0; background: transparent; color: #7a5a3c; min-height: 32px; }
+.packbtn { min-height: 52px; font-size: 16px; border-radius: 14px; }
+.packbtn:disabled { background: #eadfcd; color: #8a7a68; box-shadow: none; }
+.sbtns button.got { background: var(--ok-soft); color: var(--ok); border-color: #bfe0cb; }
+.sbtns .chip { min-height: 46px; border-radius: 12px; }
+.serve, .decide, .sheet { border-radius: 18px; }
+.stitle { font-size: 15px; }
+.sheet h2 { font-weight: 800; letter-spacing: -.02em; }
+.clockbox b { font-weight: 800; letter-spacing: -.02em; }
+.pulse { box-shadow: 0 0 0 3px var(--gold); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(227, 165, 32, .35); } }
+body:not(.tall) .sbtns button, body:not(.tall) .sbtns .chip { min-height: 40px; font-size: 13px; }
+body:not(.tall) .packbtn { min-height: 44px; font-size: 15px; }
+.sbtns .cnt { margin-left: 8px; font-variant-numeric: tabular-nums; opacity: .8; }

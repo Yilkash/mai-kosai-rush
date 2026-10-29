@@ -18,3 +18,8 @@
 - **Transfers and fake alerts from evening 1.** The third customer of evening 1 always shows a fake (Pending) alert with a tip.
 - **Oluwasegun must be noticeable**: his green "post on WhatsApp" button is there from evening 1, he introduces himself after the first sale, and Stall view names him.
 - **Lois wears a top and jeans, never a wrapper** ("she is my beautiful badie"). The bench friend's name is spelled **Oluwasegun**.
+- **Look matches the Mai Kosai order app** (~/lois-akara): Plus Jakarta Sans everywhere, the dark-brown main button (#5a230c) with a soft shadow, white buttons with a thin #e7d5b8 line, green "done" state, pill-shaped top buttons. The user asked for this.
+- **Lois's hair is long braids** (`longbraids`). Tricia is fuller-bodied (`chubby`, `curvy`) and has a name tag.
+- **Upright Stall view must show from the speaker/firewood on the left to the bench on the right**; an earlier, tighter framing hid Mama Naomi and Tricia off screen.
+- **Closing detail:** Lois washes in a basin at the FRONT, by her table (not at Racheal's place). Racheal sits and rests a little before pouring the oil into the white jerrycan.
+- **Pause** has a small "Start again from evening 1" (with a "Sure?" step that empties the tin).
